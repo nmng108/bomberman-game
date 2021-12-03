@@ -215,7 +215,16 @@ public class Sprite {
 			}
 		}
 	}
-	
+
+	/**
+	 *
+	 * @param normal
+	 * @param x1
+	 * @param x2
+	 * @param animate should be current time.
+	 * @param time is the time to reset orderly rendered image to the start.
+	 * @return
+	 */
 	public static Sprite movingSprite(Sprite normal, Sprite x1, Sprite x2, int animate, int time) {
 		int calc = animate % time;
 		int diff = time / 3;
@@ -230,12 +239,30 @@ public class Sprite {
 			
 		return x2;
 	}
-	
+	public static Image movingImage(Image normal, Image x1, Image x2, double animate, final double time) {
+		double calc = animate % time;
+		double diff = time / 3;
+
+		if(calc < diff) {
+			return normal;
+		}
+
+		if(calc < diff * 2) {
+			return x1;
+		}
+
+		return x2;
+	}
+
 	public static Sprite movingSprite(Sprite x1, Sprite x2, int animate, int time) {
 		int diff = time / 2;
 		return (animate % time > diff) ? x1 : x2; 
 	}
-	
+	public static Image movingImage(Image x1, Image x2, double animate, final double time) {
+		double diff = time / 2;
+		return (animate % time > diff) ? x1 : x2;
+	}
+
 	public int getSize() {
 		return SIZE;
 	}
