@@ -1,9 +1,11 @@
-package uet.oop.bomberman.entities;
+package uet.oop.bomberman.entities.Bomb;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import uet.oop.bomberman.BombermanGame;
 import uet.oop.bomberman.Base.Point;
+import uet.oop.bomberman.entities.Entity;
+import uet.oop.bomberman.entities.MovableEntities.MovableEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +13,8 @@ import java.util.List;
 public abstract class FlameLine extends Entity {
     protected Point lastFlameSegment;
     protected List<Point> flameSegments = new ArrayList<>();
+
+    protected List<MovableEntity> killed_enemy_list = new ArrayList<>();
 
     //1 of 4: RIGHT, DOWN, LEFT, UP
     protected int direction;
@@ -23,8 +27,8 @@ public abstract class FlameLine extends Entity {
 
     protected boolean done = false;
 
-    protected List<Image> flameImages;
-    protected List<Image> lastFlameImages;
+    protected List<Image> flame_images;
+    protected List<Image> last_flame_images;
 
     public FlameLine(int xOrigin, int yOrigin, int rangeUnit) {
         super(0, 0, null);
@@ -37,6 +41,10 @@ public abstract class FlameLine extends Entity {
 
     public boolean isDone() {
         return this.done;
+    }
+
+    public List<MovableEntity> getKilledEnemies() {
+        return killed_enemy_list;
     }
 
     @Override
@@ -56,16 +64,16 @@ public abstract class FlameLine extends Entity {
         }
 //may remove code block above?
         if (current_time - start_time <=  TIME_FOREACH_IMAGE) {
-            this.img = flameImages.get(0);
-            gc.drawImage(lastFlameImages.get(0), lastFlameSegment.x, lastFlameSegment.y);
+            this.img = flame_images.get(0);
+            gc.drawImage(last_flame_images.get(0), lastFlameSegment.x, lastFlameSegment.y);
         }
         else if (current_time - start_time <= 2 * TIME_FOREACH_IMAGE) {
-            this.img = flameImages.get(1);
-            gc.drawImage(lastFlameImages.get(1), lastFlameSegment.x, lastFlameSegment.y);
+            this.img = flame_images.get(1);
+            gc.drawImage(last_flame_images.get(1), lastFlameSegment.x, lastFlameSegment.y);
         }
         else {
-            this.img = flameImages.get(2);
-            gc.drawImage(lastFlameImages.get(2), lastFlameSegment.x, lastFlameSegment.y);
+            this.img = flame_images.get(2);
+            gc.drawImage(last_flame_images.get(2), lastFlameSegment.x, lastFlameSegment.y);
         }
 
         this.flameSegments.forEach(flame -> {

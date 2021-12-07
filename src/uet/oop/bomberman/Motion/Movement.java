@@ -1,10 +1,14 @@
-package uet.oop.bomberman.entities.Motion;
+package uet.oop.bomberman.Motion;
 
 import uet.oop.bomberman.Base.GameMap;
 import uet.oop.bomberman.Base.Point;
 import uet.oop.bomberman.BombermanGame;
+import uet.oop.bomberman.entities.Entity;
 import uet.oop.bomberman.entities.MovableEntities.MovableEntity;
 import uet.oop.bomberman.graphics.Sprite;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public abstract class Movement {
     public static final int RIGHT = 0;
@@ -13,17 +17,23 @@ public abstract class Movement {
     public static final int DOWN = 3;
     public static final int FREEZE = 4;
 
+    protected double pixels_foreach_unitOfMoveLength = 1;
+    /**
+     * Speed is the number of units of move length a character can move continuously
+     * per 1 second.
+     * Maximum value is about 70.
+     */
     protected int speed;
+    /** period = 1 / speed, is the number of seconds needed to move 1 unit. */
     protected double period;
+    /** calc_period is a supporting variable, used to make new time mark right at the time a new move is done. */
     protected double calc_period = 0;
 
     protected int x, y;
     protected int direction = FREEZE;
 
     //not used
-    protected int distance_to_object_ahead = Integer.MAX_VALUE;
-
-    protected boolean justSpawnBomb = false;
+    protected Double distance_to_stillObject_ahead = Double.MAX_VALUE;
 
     protected MovableEntity entity;
 
@@ -44,28 +54,69 @@ public abstract class Movement {
         return this.direction;
     }
 
-    public void setJustSpawnBomb(boolean state) {
-        this.justSpawnBomb = state;
-    }
-
+    //Unused
     public int getSpeed() {
         return speed;
     }
 
+    //Unused
     public void setSpeed(int speed) {
         this.speed = speed;
+        this.period = (double) 1 / speed;
     }
 
-    public void speedUp() {
-        this.speed += 2;
+    public void speedUp(int n) {
+        this.speed += n;
+        this.period = (double) 1 / this.speed;
     }
 
     public void stop() {
         this.direction = Movement.FREEZE;
     }
 
+    //Based on direction.
+    protected Entity getObjectAhead() {
+        Entity e;
+//need to consider if the moving entity is being blocked partially or completely...
+        switch (this.direction) {
+            case RIGHT -> {
+                e = GameMap.getObjectAt(null, x + Sprite.SCALED_SIZE, y);
+                if (e != null) return e;
+
+                e = GameMap.getObjectAt(null, x + Sprite.SCALED_SIZE, y + Sprite.SCALED_SIZE - 1);
+                if (e != null) return e;
+            }
+
+            case LEFT -> {
+                e = GameMap.getObjectAt(null, x - 1, y);
+                if (e != null) return e;
+
+                e = GameMap.getObjectAt(null, x - 1, y + Sprite.SCALED_SIZE - 1);
+                if (e != null) return e;
+            }
+
+            case DOWN -> {
+                e = GameMap.getObjectAt(null, x, y + Sprite.SCALED_SIZE);
+                if (e != null) return e;
+
+                e = GameMap.getObjectAt(null, x + Sprite.SCALED_SIZE - 1, y + Sprite.SCALED_SIZE);
+                if (e != null) return e;
+            }
+
+            case UP -> {
+                e = GameMap.getObjectAt(null, x, y - 1);
+                if (e != null) return e;
+
+                e = GameMap.getObjectAt(null, x + Sprite.SCALED_SIZE - 1, y - 1);
+                if (e != null) return e;
+            }
+        }
+
+        return null;
+    }
+
     //8 cases at all.
-    protected void moveDiagonally() {
+    protected void moveDiagonally(int pixels_foreach_move) {
         if (diagonalDirection == null) {
             System.out.println("CANT MOVE DIAGONALLY");
             return;
@@ -74,46 +125,42 @@ public abstract class Movement {
         if (diagonalDirection.x == Movement.LEFT) {
             switch (diagonalDirection.y) {
                 case Movement.DOWN -> { //moving LEFT DOWN
-                    this.x--;
-                    this.y++;
+                    this.x -= pixels_foreach_move;
+                    this.y += pixels_foreach_move;
                 }
 
                 case Movement.UP -> { //moving LEFT UP
-                    this.x--;
-                    this.y--;
+                    this.x -= pixels_foreach_move;
+                    this.y -= pixels_foreach_move;
                 }
             }
         }
         else if (diagonalDirection.x == Movement.RIGHT) {
             switch (diagonalDirection.y) {
                 case Movement.DOWN -> { //moving RIGHT DOWN
-                    this.x++;
-                    this.y++;
+                    this.x += pixels_foreach_move;
+                    this.y += pixels_foreach_move;
                 }
 
                 case Movement.UP -> { //moving RIGHT UP
-                    this.x++;
-                    this.y--;
+                    this.x += pixels_foreach_move;
+                    this.y -= pixels_foreach_move;
                 }
             }
         }
     }
 
     //not used
-    protected void getCLoserToObject() {
-        if (distance_to_object_ahead > 0 && distance_to_object_ahead < 1) {
-            switch (direction) {
-                case UP -> y -= distance_to_object_ahead;
-                case LEFT -> x -= distance_to_object_ahead;
-            }
-        }
-        if (distance_to_object_ahead > Sprite.SCALED_SIZE
-                && distance_to_object_ahead < Sprite.SCALED_SIZE + speed) {
+    protected void moveCLoserToObject() { //need to supplement distance_to_movableObject
+        distance_to_stillObject_ahead = GameMap.distanceToStillObjectAhead(this.entity);
 
-            switch (direction) {
-                case DOWN -> y += distance_to_object_ahead - Sprite.SCALED_SIZE;
-                case RIGHT -> x += distance_to_object_ahead - Sprite.SCALED_SIZE;
-            }
+        if (distance_to_stillObject_ahead >= this.pixels_foreach_unitOfMoveLength) return;
+
+        switch (direction) {
+            case UP -> y -= distance_to_stillObject_ahead;
+            case LEFT -> x -= distance_to_stillObject_ahead;
+            case DOWN -> y += distance_to_stillObject_ahead;
+            case RIGHT -> x += distance_to_stillObject_ahead;
         }
     }
 
@@ -142,33 +189,33 @@ public abstract class Movement {
             }
 
             //if 1(or more) still object is standing in movement range_unit:
-            distance_to_object_ahead = GameMap.distanceToStillObjectAhead(startingPoint, destinationPoint);
+            distance_to_stillObject_ahead = GameMap.distanceToStillObjectAhead(this.entity);
 
             if ((direction == LEFT || direction == UP)
-                    && (distance_to_object_ahead >= 0
-                    && distance_to_object_ahead < moving_distance)) {
-//                System.out.println("Still object: " + distance_to_object_ahead + " and direction: " + direction);
+                    && (distance_to_stillObject_ahead >= 0
+                    && distance_to_stillObject_ahead < moving_distance)) {
+//                System.out.println("Still object: " + distance_to_stillObject_ahead + " and direction: " + direction);
                 return true;
             } else if ((direction == RIGHT || direction == DOWN)
-                    && (distance_to_object_ahead >= Sprite.SCALED_SIZE
-                    && distance_to_object_ahead < moving_distance + Sprite.SCALED_SIZE)) {
-//                System.out.println("Still object: " + distance_to_object_ahead + " and direction: " + direction);
+                    && (distance_to_stillObject_ahead >= Sprite.SCALED_SIZE
+                    && distance_to_stillObject_ahead < moving_distance + Sprite.SCALED_SIZE)) {
+//                System.out.println("Still object: " + distance_to_stillObject_ahead + " and direction: " + direction);
                 return true;
             }
 
             //if 1(or more) movable object is standing in movement range_unit:
-            distance_to_object_ahead = GameMap.distanceToMovableEntityAhead(this.entity,
+            distance_to_stillObject_ahead = GameMap.distanceToMovableEntityAhead(this.entity,
                     startingPoint, destinationPoint);
 
             if ((direction == LEFT || direction == UP)
-                    && (distance_to_object_ahead >= 0
-                    && distance_to_object_ahead < moving_distance)) {
-//                System.out.println("Enemy: " + distance_to_object_ahead + " and direction: " + direction);
+                    && (distance_to_stillObject_ahead >= 0
+                    && distance_to_stillObject_ahead < moving_distance)) {
+//                System.out.println("Enemy: " + distance_to_stillObject_ahead + " and direction: " + direction);
                 return true;
             } else if ((direction == RIGHT || direction == DOWN)
-                    && (distance_to_object_ahead >= Sprite.SCALED_SIZE
-                    && distance_to_object_ahead < moving_distance + Sprite.SCALED_SIZE)) {
-//                System.out.println("Enemy: " + distance_to_object_ahead + " and direction: " + direction);
+                    && (distance_to_stillObject_ahead >= Sprite.SCALED_SIZE
+                    && distance_to_stillObject_ahead < moving_distance + Sprite.SCALED_SIZE)) {
+//                System.out.println("Enemy: " + distance_to_stillObject_ahead + " and direction: " + direction);
                 return true;
             }
         } catch (NullPointerException e) {
@@ -330,91 +377,103 @@ public abstract class Movement {
 
     //Based on direction.
     //Have the same codes to isTouchingAnObjectAhead() method.
+    // Unused
     protected boolean canMove(int direction) {
-        switch (direction) {
-            case RIGHT -> {
-                if (GameMap.containsObjectAt(this.entity, x + Sprite.SCALED_SIZE, y)
-                        || GameMap.containsObjectAt(this.entity,
-                                x + Sprite.SCALED_SIZE,
-                                y + Sprite.SCALED_SIZE - 1)) {
-                    return true;
-                }
-            }
-            case LEFT -> {
-                if (GameMap.containsObjectAt(this.entity, x - 1, y)
-                        || GameMap.containsObjectAt(this.entity,
-                                x - 1,
-                                y + Sprite.SCALED_SIZE - 1)) {
-                    return true;
-                }
-            }
-            case DOWN -> {
-                if (GameMap.containsObjectAt(this.entity, x, y + Sprite.SCALED_SIZE)
-                        || GameMap.containsObjectAt(this.entity,
-                                x + Sprite.SCALED_SIZE - 1,
-                                y + Sprite.SCALED_SIZE)) {
-                    return true;
-                }
-            }
-            case UP -> {
-                if (GameMap.containsObjectAt(this.entity, x, y - 1)
-                        || GameMap.containsObjectAt(this.entity,
-                                x + Sprite.SCALED_SIZE - 1,
-                                y - 1)) {
-                    return true;
-                }
-            }
-        }
-
         return false;
     }
 
     //Based on direction.
-    //not used
-    protected boolean isOnStillObjectAhead() {
+    public Set<Entity> getSteppedOverObjects(MovableEntity except_entity) {
+        HashSet<Entity> result = new HashSet<>();
+        Entity entity = null;
+
         switch (this.direction) {
             case UP -> {
-                if (GameMap.containsObjectAt(this.entity, this.x, this.y)
-                        || GameMap.containsObjectAt(this.entity, this.x + Sprite.SCALED_SIZE - 1, this.y)) {
-                    return true;
-                }
+                entity = GameMap.getObjectAt(except_entity, this.x, this.y);
+                if (entity != null && !entity.equals(except_entity)) result.add(entity);
+
+                entity = GameMap.getObjectAt(except_entity, this.x + Sprite.SCALED_SIZE - 1, this.y);
+                if (entity != null && !entity.equals(except_entity)) result.add(entity);
             }
+
             case LEFT -> {
-                if (GameMap.containsObjectAt(this.entity, this.x, this.y)
-                        || GameMap.containsObjectAt(this.entity, this.x, this.y + Sprite.SCALED_SIZE - 1)) {
-                    return true;
-                }
+                entity = GameMap.getObjectAt(except_entity, this.x, this.y);
+                if (entity != null && !entity.equals(except_entity)) result.add(entity);
+
+                entity = GameMap.getObjectAt(except_entity, this.x, this.y + Sprite.SCALED_SIZE - 1);
+                if (entity != null && !entity.equals(except_entity)) result.add(entity);
             }
+
             case DOWN -> {
-                if (GameMap.containsObjectAt(this.entity, this.x, this.y + Sprite.SCALED_SIZE - 1)
-                        || GameMap.containsObjectAt(this.entity, this.x + Sprite.SCALED_SIZE - 1,
-                                this.y + Sprite.SCALED_SIZE - 1)) {
-                    return true;
-                }
+                entity = GameMap.getObjectAt(except_entity, this.x, this.y + Sprite.SCALED_SIZE - 1);
+                if (entity != null && !entity.equals(except_entity)) result.add(entity);
+
+                entity = GameMap.getObjectAt(except_entity, this.x + Sprite.SCALED_SIZE - 1,
+                        this.y + Sprite.SCALED_SIZE - 1);
+                if (entity != null && !entity.equals(except_entity)) result.add(entity);
             }
+
             case RIGHT -> {
-                if (GameMap.containsObjectAt(this.entity, this.x + Sprite.SCALED_SIZE - 1, this.y)
-                        || GameMap.containsObjectAt(this.entity, this.x + Sprite.SCALED_SIZE - 1,
-                                this.y + Sprite.SCALED_SIZE - 1)) {
-                    return true;
-                }
+                entity = GameMap.getObjectAt(except_entity, this.x + Sprite.SCALED_SIZE - 1, this.y);
+                if (entity != null && !entity.equals(except_entity)) result.add(entity);
+
+                entity = GameMap.getObjectAt(except_entity, this.x + Sprite.SCALED_SIZE - 1,
+                                this.y + Sprite.SCALED_SIZE - 1);
+                if (entity != null && !entity.equals(except_entity)) result.add(entity);
             }
         }
 
-        return false;
+        return result;
     }
 
-    protected boolean isOnBomb() {
-        Point player_from = new Point(x, y);
-        Point player_to = new Point(x + Sprite.SCALED_SIZE - 1, y + Sprite.SCALED_SIZE - 1);
+    public Set<Entity> getObjectsAhead() {
+        HashSet<Entity> result = new HashSet<>();
+        Entity entity = null;
 
-        for (int i = player_from.x; i <= player_to.x; i++) {
-            for (int j = player_from.y; j <= player_to.y; j++) {
-                if (GameMap.getBombAt(i, j) != null) return true;
+        switch (this.direction) {
+            case UP -> {
+                entity = GameMap.getObjectAt(null, this.x, this.y - 1);
+                if (entity != null) result.add(entity);
+
+                entity = GameMap.getObjectAt(null, this.x + Sprite.SCALED_SIZE - 1,
+                        this.y - 1);
+                if (entity != null) result.add(entity);
+            }
+
+            case LEFT -> {
+                entity = GameMap.getObjectAt(null, this.x - 1, this.y);
+                if (entity != null) result.add(entity);
+
+                entity = GameMap.getObjectAt(null, this.x - 1,
+                        this.y + Sprite.SCALED_SIZE - 1);
+                if (entity != null) result.add(entity);
+            }
+
+            case DOWN -> {
+                entity = GameMap.getObjectAt(null, this.x, this.y + Sprite.SCALED_SIZE);
+                if (entity != null) result.add(entity);
+
+                entity = GameMap.getObjectAt(null, this.x + Sprite.SCALED_SIZE - 1,
+                        this.y + Sprite.SCALED_SIZE);
+                if (entity != null) result.add(entity);
+            }
+
+            case RIGHT -> {
+                entity = GameMap.getObjectAt(null, this.x + Sprite.SCALED_SIZE, this.y);
+                if (entity != null) result.add(entity);
+
+                entity = GameMap.getObjectAt(null, this.x + Sprite.SCALED_SIZE,
+                                this.y + Sprite.SCALED_SIZE - 1);
+                if (entity != null) result.add(entity);
             }
         }
 
-        return false;
+        return result;
+    }
+
+    public boolean removeOwner() {
+        this.entity = null;
+        return true;
     }
 
     /**

@@ -2,7 +2,7 @@ package uet.oop.bomberman.entities.MovableEntities;
 
 import javafx.scene.image.Image;
 import uet.oop.bomberman.BombermanGame;
-import uet.oop.bomberman.entities.Motion.Movement;
+import uet.oop.bomberman.Motion.Movement;
 import uet.oop.bomberman.entities.Entity;
 
 import java.util.List;
@@ -36,6 +36,14 @@ public abstract class MovableEntity extends Entity {
 
     public void setDead(boolean dead) {
         this.dead = dead;
+        if (this.movement != null) {
+            this.movement.removeOwner();
+//            this.movement = null;
+        }
+    }
+
+    public int getDirection() {
+        return movement.getDirection();
     }
 
     protected void countdownUntilRemoved(final double TIME_DEAD_STATE) {

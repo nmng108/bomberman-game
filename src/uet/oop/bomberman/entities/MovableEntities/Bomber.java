@@ -1,23 +1,35 @@
 package uet.oop.bomberman.entities.MovableEntities;
 
-import javafx.scene.image.Image;
+import javafx.event.EventHandler;
+import javafx.scene.Scene;
+import javafx.scene.input.KeyEvent;
 import uet.oop.bomberman.*;
 import uet.oop.bomberman.Base.GameMap;
 import uet.oop.bomberman.Base.Point;
-import uet.oop.bomberman.entities.Bomb;
-import uet.oop.bomberman.entities.Motion.Movement;
-import uet.oop.bomberman.entities.Motion.PlayerMovement;
+import uet.oop.bomberman.entities.Bomb.Bomb;
+import uet.oop.bomberman.Motion.Movement;
+import uet.oop.bomberman.Motion.PlayerMovement;
+import uet.oop.bomberman.entities.Entity;
+import uet.oop.bomberman.entities.Item.Item;
 import uet.oop.bomberman.graphics.ImageLists;
 import uet.oop.bomberman.graphics.Sprite;
 
 import java.util.List;
 
+/**
+ * Extended by Player and AI
+ * Currently used by Player only.
+ */
 public class Bomber extends MovableEntity {
-    private int explosion_range = 3;
-    private int max_spawnedBomb = 2;
+    private final int ID;
 
-    public Bomber(int xUnit, int yUnit, int initialSpeedByPixel, Image image) {
-        super( xUnit, yUnit, image);
+    private int explosion_range = 1;
+    private int remaining_bombs = 2;
+
+    public Bomber(final int ID, int xUnit, int yUnit, int initialSpeedByPixel) {
+        super( xUnit, yUnit, Sprite.player_up.getFxImage());
+
+        this.ID = ID;
 
         movement = new PlayerMovement(this, x, y, initialSpeedByPixel);
 
@@ -30,7 +42,12 @@ public class Bomber extends MovableEntity {
         imageListArray[Movement.RIGHT] = ImageLists.playerMovingRightImages;
     }
 
-    public void setDirection(int direction) {
+
+    public int getID() {
+        return this.ID;
+    }
+
+    private void setDirection(int direction) {
 //        this.direction = direction;
         movement.setDirection(direction);
 
@@ -39,10 +56,8 @@ public class Bomber extends MovableEntity {
         }
     }
 
-    public void spawnBomb() {
-        if (max_spawnedBomb == 0) return;
-
-        movement.setJustSpawnBomb(true);
+    public void placeBomb() {
+        if (remaining_bombs == 0) return;
 
         int xUnit = this.x / Sprite.SCALED_SIZE;
         int yUnit = this.y / Sprite.SCALED_SIZE;
@@ -65,23 +80,30 @@ public class Bomber extends MovableEntity {
         }
 
         try {
+            //if existed a bomb, player don't have ability to place bomb.
             if (GameMap.getBombAt(xUnit * Sprite.SCALED_SIZE, yUnit * Sprite.SCALED_SIZE) != null) {
                 return;
             }
 
-            GameMap.addBomb(new Bomb(xUnit, yUnit, Sprite.bomb.getFxImage(), explosion_range));
-            max_spawnedBomb -= 1;
+            Bomb addedBomb = GameMap.addBomb(
+                    new Bomb(xUnit, yUnit, Sprite.bomb.getFxImage(), this.ID, explosion_range));
+
+            ((PlayerMovement) movement).addPlacedBomb(addedBomb);
+
+            remaining_bombs -= 1;
         }
         catch (Exception e) {
             System.out.println(e.getMessage());
         }
-
-        System.out.println("Entities: " + GameMap.getMovableEntities().size());
-        System.out.println("Still objects: " + GameMap.getWalls().size());
     }
 
-    public void increaseOneBomb() {
-        max_spawnedBomb++;
+    public void takeBackOneBomb() {
+        remaining_bombs++;
+    }
+
+
+    public void increaseBombCapacity() {
+        remaining_bombs += 1;
     }
 
     public void increaseExplosionRange() {
@@ -89,76 +111,96 @@ public class Bomber extends MovableEntity {
     }
 
     public void increaseSpeed() {
-        movement.speedUp();
+        movement.speedUp(50);
+    }
+
+    public void detectAndPickUpItem() {
+        for (Entity object : movement.getSteppedOverObjects(this)) {
+            if (object instanceof Item) {
+                ((Item) object).buff(this);
+            }
+        }
     }
 
     @Override
     protected void move() {
         Point tmp = movement.run();
         try {
-            if (x == tmp.x && y == tmp.y && movement.getDirection() != Movement.FREEZE) {
-                switch (movement.getDirection()) {
-                    case Movement.RIGHT -> {
-                        if (GameMap.getObjectAt(x + Sprite.SCALED_SIZE, y) != null)
-                            System.out.println(GameMap.getObjectAt(x + Sprite.SCALED_SIZE, y).toString());
-                        else System.out.println(GameMap.getObjectAt(x + Sprite.SCALED_SIZE,
-                                    y + Sprite.SCALED_SIZE).toString());
-                    }
-                    case Movement.LEFT -> {
-                        if (GameMap.getObjectAt(x - 1, y) != null)
-                            System.out.println(GameMap.getObjectAt(x - 1, y).toString());
-                        else System.out.println(GameMap.getObjectAt(x - 1, y + Sprite.SCALED_SIZE).toString());
-                    }
-                    case Movement.UP -> {
-                        if (GameMap.getObjectAt(x, y - 1) != null)
-                           System.out.println(GameMap.getObjectAt(x, y - 1).toString());
-                        else System.out.println(GameMap.getObjectAt(x + Sprite.SCALED_SIZE, y - 1).toString());
-                    }
-                    case Movement.DOWN -> {
-                        if (GameMap.getObjectAt(x, y + Sprite.SCALED_SIZE) != null)
-                            System.out.println(GameMap.getObjectAt(x, y + Sprite.SCALED_SIZE).toString());
-                        else System.out.println(GameMap.getObjectAt(x + Sprite.SCALED_SIZE,
-                                y + Sprite.SCALED_SIZE).toString());
-                    }
-                }
-            }
+//            if (x == tmp.x && y == tmp.y && movement.getDirection() != Movement.FREEZE) {
+//                switch (movement.getDirection()) {
+//                    case Movement.RIGHT -> {
+//                        if (GameMap.getObjectAt(x + Sprite.SCALED_SIZE, y) != null)
+//                            System.out.println(GameMap.getObjectAt(x + Sprite.SCALED_SIZE, y).toString());
+//                        else if (GameMap.getObjectAt(x + Sprite.SCALED_SIZE,
+//                                y + Sprite.SCALED_SIZE) != null)
+//                            System.out.println(GameMap.getObjectAt(x + Sprite.SCALED_SIZE,
+//                                    y + Sprite.SCALED_SIZE).toString());
+//                    }
+//                    case Movement.LEFT -> {
+//                        if (GameMap.getObjectAt(x - 1, y) != null)
+//                            System.out.println(GameMap.getObjectAt(x - 1, y).toString());
+//                        else if (GameMap.getObjectAt(x - 1, y + Sprite.SCALED_SIZE) != null)
+//                            System.out.println(GameMap.getObjectAt(x - 1, y + Sprite.SCALED_SIZE).toString());
+//                    }
+//                    case Movement.UP -> {
+//                        if (GameMap.getObjectAt(x, y - 1) != null)
+//                           System.out.println(GameMap.getObjectAt(x, y - 1).toString());
+//                        else if (GameMap.getObjectAt(x + Sprite.SCALED_SIZE, y - 1) != null)
+//                            System.out.println(GameMap.getObjectAt(x + Sprite.SCALED_SIZE, y - 1).toString());
+//                    }
+//                    case Movement.DOWN -> {
+//                        if (GameMap.getObjectAt(x, y + Sprite.SCALED_SIZE) != null)
+//                            System.out.println(GameMap.getObjectAt(x, y + Sprite.SCALED_SIZE).toString());
+//                        else if (GameMap.getObjectAt(x + Sprite.SCALED_SIZE,
+//                                y + Sprite.SCALED_SIZE) != null)
+//                            System.out.println(GameMap.getObjectAt(x + Sprite.SCALED_SIZE,
+//                                y + Sprite.SCALED_SIZE).toString());
+//                    }
+//                }
+//            }
             x = tmp.x;
             y = tmp.y;
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
+//        System.out.println(movement.getSpeed());
     }
 
     @Override
     public void update() {
         imageUpdate();
 
+        if (deleted) {
+            movement = null;
+            GameMap.removeObject(this);
+        }
         if (dead && !deleted) {
             movement.stop();
 
             countdownUntilRemoved(TIME_FOREACH_IMAGE * 3.1);
-
-            if (this.img == deadState_images.get(2)) {
-                System.out.println("GAME OVER!");
-            }
         }
-
         if (!dead) {
             dead_startTime = BombermanGame.getTime();
+
             move();
+
+            detectAndPickUpItem();
+
+            for (Entity entity : movement.getObjectsAhead()) {
+                if (entity instanceof Balloon || entity instanceof OneAl) {
+                    this.setDead(true);
+                }
+            }
         }
     }
 
     @Override
     protected void imageUpdate() {
-        if (deleted) {
-            this.img = null;
-        }
-        else if (dead) {
+        if (dead) {
             //timer
             double current_time = BombermanGame.getTime();
             double dead_time = current_time - this.dead_startTime;
-            //if current_time reach to maximum value and turn back to 0:
+            //if current_time reach to maximum value and turn back to 0: (quite hard to happen)
             if (dead_time < 0) {
                 dead_time = (BombermanGame.TIME_COUNT_MAX - this.dead_startTime) + current_time;
             }
@@ -187,6 +229,101 @@ public class Bomber extends MovableEntity {
         }
 
     }
+
+    public void setOnPlayerEvents(Scene scene, int player_ordinal_number) {
+        if (player_ordinal_number == 1) {
+            scene.addEventHandler(KeyEvent.KEY_PRESSED, set1_a);
+            scene.addEventHandler(KeyEvent.KEY_RELEASED, set1_b);
+//            scene.addEventHandler(KeyEvent.KEY_RELEASED, set1_b);
+        }
+
+        if (player_ordinal_number == 2) {
+            scene.addEventHandler(KeyEvent.KEY_PRESSED,set2_a);
+            scene.addEventHandler(KeyEvent.KEY_RELEASED,set2_b);
+
+            prev_direction = Movement.LEFT;
+        }
+    }
+
+    public void removeHandler(Scene scene, int player_ordinal_number) {
+        if (player_ordinal_number == 1) {
+            scene.removeEventHandler(KeyEvent.KEY_PRESSED, set1_a);
+            scene.removeEventHandler(KeyEvent.KEY_RELEASED, set1_b);
+        }
+
+        if (player_ordinal_number == 2) {
+            scene.removeEventHandler(KeyEvent.KEY_PRESSED,set2_a);
+            scene.removeEventHandler(KeyEvent.KEY_RELEASED,set2_b);
+        }
+    }
+
+    private EventHandler<KeyEvent> set1_a = new EventHandler<KeyEvent>() {
+        @Override
+        public void handle(KeyEvent keyEvent) {
+            switch (keyEvent.getCode()) {
+                case LEFT -> setDirection(Movement.LEFT);
+                case RIGHT -> setDirection(Movement.RIGHT);
+                case UP -> setDirection(Movement.UP);
+                case DOWN -> setDirection(Movement.DOWN);
+                case ENTER -> placeBomb();
+            }
+        }
+    };
+    private EventHandler<KeyEvent> set1_b = new EventHandler<KeyEvent>() {
+        @Override
+        public void handle(KeyEvent keyEvent) {
+            switch (keyEvent.getCode()) {
+                case UP -> {
+                    if (movement.getDirection() == Movement.UP)
+                        setDirection(Movement.FREEZE);
+                }case LEFT -> {
+                    if (movement.getDirection() == Movement.LEFT)
+                        setDirection(Movement.FREEZE);
+                }case RIGHT -> {
+                    if (movement.getDirection() == Movement.RIGHT)
+                        setDirection(Movement.FREEZE);
+                }case DOWN -> {
+                    if (movement.getDirection() == Movement.DOWN)
+                        setDirection(Movement.FREEZE);
+                }
+            }
+        }
+    };
+    private EventHandler<KeyEvent> set2_a = new EventHandler<KeyEvent>() {
+        @Override
+        public void handle(KeyEvent keyEvent) {
+            switch (keyEvent.getCode()) {
+                case A -> setDirection(Movement.LEFT);
+                case D -> setDirection(Movement.RIGHT);
+                case W -> setDirection(Movement.UP);
+                case S -> setDirection(Movement.DOWN);
+                case SPACE -> placeBomb();
+            }
+        }
+    };
+    private EventHandler<KeyEvent> set2_b = new EventHandler<KeyEvent>() {
+        @Override
+        public void handle(KeyEvent keyEvent) {
+            switch (keyEvent.getCode()) {
+                case W -> {
+                    if (movement.getDirection() == Movement.UP)
+                        setDirection(Movement.FREEZE);
+                }
+                case A -> {
+                    if (movement.getDirection() == Movement.LEFT)
+                        setDirection(Movement.FREEZE);
+                }
+                case D -> {
+                    if (movement.getDirection() == Movement.RIGHT)
+                        setDirection(Movement.FREEZE);
+                }
+                case S -> {
+                    if (movement.getDirection() == Movement.DOWN)
+                        setDirection(Movement.FREEZE);
+                }
+            }
+        }
+    };
 
 //    @Override
 //    protected void countdownUntilRemoved() {

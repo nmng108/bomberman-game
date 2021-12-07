@@ -1,10 +1,9 @@
 package uet.oop.bomberman.entities.MovableEntities;
 
-import javafx.scene.image.Image;
 import uet.oop.bomberman.BombermanGame;
-import uet.oop.bomberman.entities.Motion.Movement;
+import uet.oop.bomberman.Motion.Movement;
 import uet.oop.bomberman.Base.Point;
-import uet.oop.bomberman.entities.Motion.RandomMovement;
+import uet.oop.bomberman.Motion.RandomMovement;
 import uet.oop.bomberman.graphics.ImageLists;
 import uet.oop.bomberman.graphics.Sprite;
 
@@ -12,8 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Balloon extends MovableEntity {
-    public Balloon(int xUnit, int yUnit, int initialSpeedByPixel, Image image) {
-        super(xUnit, yUnit, image);
+    public Balloon(int xUnit, int yUnit, int initialSpeedByPixel) {
+        super(xUnit, yUnit, Sprite.balloom_right1.getFxImage());
 
         movement = new RandomMovement(this, this.x, this.y, initialSpeedByPixel);
 
@@ -45,15 +44,17 @@ public class Balloon extends MovableEntity {
             movement.stop();
 
             countdownUntilRemoved(TIME_FOREACH_IMAGE * 1.2);
-
-            if (this.img == deadState_images.get(0)) {
-                System.out.println("1 balloon exploded.");
-            }
         }
 
         if (!dead) {
             dead_startTime = BombermanGame.getTime();
             move();
+            // may change handling balloon's collision with bomber to move transparently in the future.
+            movement.getObjectsAhead().forEach(obj -> {
+                if (obj instanceof Bomber) {
+                    ((Bomber) obj).setDead(true);
+                }
+            });
         }
     }
 
@@ -78,6 +79,9 @@ public class Balloon extends MovableEntity {
         }
     }
 
+    private void killPlayer() {
+
+    }
 //    @Override
 //    protected void countdownUntilRemoved() {
 //        double current_time = BombermanGame.getTime();

@@ -10,8 +10,8 @@ import java.util.List;
 public class Brick extends BreakableStillObject {
     private List<Image> brokenState_images;
 
-    public Brick(int xUnit, int yUnit, Image image) {
-        super(xUnit, yUnit, image);
+    public Brick(int xUnit, int yUnit) {
+        super(xUnit, yUnit, Sprite.brick.getFxImage());
 
         brokenState_images = new ArrayList<>() {{
             add(Sprite.brick_exploded.getFxImage());

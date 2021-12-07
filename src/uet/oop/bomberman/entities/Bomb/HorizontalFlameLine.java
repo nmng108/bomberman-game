@@ -1,12 +1,13 @@
-package uet.oop.bomberman.entities;
+package uet.oop.bomberman.entities.Bomb;
 
 import uet.oop.bomberman.Base.GameMap;
-import uet.oop.bomberman.entities.Motion.Movement;
+import uet.oop.bomberman.entities.Entity;
+import uet.oop.bomberman.Motion.Movement;
 import uet.oop.bomberman.Base.Point;
 import uet.oop.bomberman.entities.MovableEntities.MovableEntity;
 import uet.oop.bomberman.entities.StillEntities.BreakableStillObject;
 import uet.oop.bomberman.entities.StillEntities.Brick;
-import uet.oop.bomberman.entities.StillEntities.Wall;
+import uet.oop.bomberman.entities.StillEntities.StableStillObject.Wall;
 import uet.oop.bomberman.graphics.ImageLists;
 import uet.oop.bomberman.graphics.Sprite;
 
@@ -20,10 +21,10 @@ public class HorizontalFlameLine extends FlameLine {
             throw new Exception("HorizontalFlameLine Construction failed");
         }
 
-        this.flameImages = ImageLists.explosionHorizontalImages;
+        this.flame_images = ImageLists.explosionHorizontalImages;
 
-        if (direction == Movement.LEFT) lastFlameImages = ImageLists.explosionHorizontalLeftLastImages;
-        if (direction == Movement.RIGHT) lastFlameImages = ImageLists.explosionHorizontalRightLastImages;
+        if (direction == Movement.LEFT) last_flame_images = ImageLists.explosionHorizontalLeftLastImages;
+        if (direction == Movement.RIGHT) last_flame_images = ImageLists.explosionHorizontalRightLastImages;
 
         this.direction = direction;
 
@@ -65,6 +66,7 @@ public class HorizontalFlameLine extends FlameLine {
 
     @Override
     protected void burn() {
+        //temporary variables
         MovableEntity movableEntity;
         BreakableStillObject object;
         Bomb bomb;
@@ -91,6 +93,7 @@ public class HorizontalFlameLine extends FlameLine {
                         }
                         if (movableEntity != null) {
                             canDiscard = true;
+                            if (!movableEntity.isDead()) killed_enemy_list.add(movableEntity);//add once
                             movableEntity.setDead(true);
                         }
                         if (bomb != null) {
@@ -112,6 +115,7 @@ public class HorizontalFlameLine extends FlameLine {
                         }
                         if (movableEntity != null) {
                             canDiscard = true;
+                            if (!movableEntity.isDead()) killed_enemy_list.add(movableEntity);
                             movableEntity.setDead(true);
                         }
                         if (bomb != null) {
@@ -131,7 +135,10 @@ public class HorizontalFlameLine extends FlameLine {
                             lastFlameSegment.y);
                     bomb = GameMap.getBombAt(lastFlameSegment.x + i, lastFlameSegment.y);
 
-                    if (movableEntity != null) movableEntity.setDead(true);
+                    if (movableEntity != null) {
+                        if (!movableEntity.isDead()) killed_enemy_list.add(movableEntity);//add once
+                        movableEntity.setDead(true);
+                    }
                     if (object != null) object.setBroken(true);
                     if (bomb != null) bomb.setTimeOver(true);
                 }
@@ -144,7 +151,10 @@ public class HorizontalFlameLine extends FlameLine {
                     bomb = GameMap.getBombAt(lastFlameSegment.x + i,
                             lastFlameSegment.y + Sprite.SCALED_SIZE - 1);
 
-                    if (movableEntity != null) movableEntity.setDead(true);
+                    if (movableEntity != null) {
+                        if (!movableEntity.isDead()) killed_enemy_list.add(movableEntity);//add once
+                        movableEntity.setDead(true);
+                    }
                     if (object != null) object.setBroken(true);
                     if (bomb != null) bomb.setTimeOver(true);
                 }

@@ -2,43 +2,45 @@ package uet.oop.bomberman;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
-import javafx.event.EventHandler;
+import javafx.application.Platform;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Group;
+import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
-import uet.oop.bomberman.Base.GameMap;
-import uet.oop.bomberman.entities.*;
-import uet.oop.bomberman.entities.Motion.Movement;
-import uet.oop.bomberman.entities.MovableEntities.Bomber;
-import uet.oop.bomberman.entities.StillEntities.BreakableStillObject;
-import uet.oop.bomberman.entities.MovableEntities.MovableEntity;
+
+import uet.oop.bomberman.Base.GameWindow;
 import uet.oop.bomberman.graphics.Sprite;
 
+import java.io.IOException;
+
 public class BombermanGame extends Application {
-    
+
     public static final int WIDTH = 31;
     public static final int HEIGHT = 13;
 
     private GraphicsContext gc;
-    private Canvas canvas;
-    private Group root;
-    private Scene scene;
-    Bomber bomber;
+    private static Canvas canvas;
+    private static Group root;
+    public static Scene scene;
+
+    private GameWindow gameWindow;
 
     public static int TIME_COUNT_MAX_BASE = 10;
-    public static double TIME_COUNT_MAX_EXPONENT = 2;
-    public static double TIME_COUNT_MAX = Math.pow(TIME_COUNT_MAX_BASE, TIME_COUNT_MAX_EXPONENT);
-    private static double time = 0;
-    private static double start_time = TIME_COUNT_MAX;
+    public static double TIME_COUNT_MAX = Math.pow(TIME_COUNT_MAX_BASE, 8);
+    private static double _time = 0;
+    private static double _start_time = TIME_COUNT_MAX;
 
-    private boolean ingame = true;
-    private boolean appIsRunning = true;
+    private static boolean hasStarted = false;
 
-    public void end() {
-        ingame = false;
+
+    public static Canvas getGameWindowCanvas() {
+        return canvas;
     }
 
     public static void main(String[] args) {
@@ -46,9 +48,10 @@ public class BombermanGame extends Application {
     }
 
     @Override
-    public void start(Stage stage) {
+    public void start(Stage stage) throws IOException {
         // Tao Canvas
-        canvas = new Canvas(Sprite.SCALED_SIZE * WIDTH, Sprite.SCALED_SIZE * HEIGHT);
+        canvas = new Canvas(Sprite.SCALED_SIZE * WIDTH,
+                Sprite.SCALED_SIZE * HEIGHT + GameWindow.INFORMATION_AREA_HEIGHT);
         gc = canvas.getGraphicsContext2D();
 
         // Tao root container
@@ -56,37 +59,18 @@ public class BombermanGame extends Application {
 
         // Tao scene
         scene = new Scene(root);
-        scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
-            @Override
-            public void handle(KeyEvent keyEvent) {
-                switch (keyEvent.getCode()) {
-                    case LEFT -> {
-                        bomber.setDirection(Movement.LEFT);
-                    }
-                    case RIGHT -> {
-                        bomber.setDirection(Movement.RIGHT);
-                    }
-                    case UP -> {
-                        bomber.setDirection(Movement.UP);
-                    }
-                    case DOWN -> {
-                        bomber.setDirection(Movement.DOWN);
-                    }
-                    case SPACE -> {
-                        bomber.spawnBomb();
-                    }
-                    default -> {
-                        bomber.setDirection(Movement.FREEZE);
-                    }
+
+        // Press ESC to pause
+        scene.addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
+            if (keyEvent.getCode().equals(KeyCode.ESCAPE)) {
+                try {
+                    setRoot("PauseScreen");
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         });
-        scene.addEventHandler(KeyEvent.KEY_RELEASED, (KeyEvent key) -> {
-
-            switch (key.getCode()) {
-                case UP, DOWN, LEFT, RIGHT -> bomber.setDirection(Movement.FREEZE);
-            }
-        });
+//        createPauseButton(root); //cause the error that we can control our character.
 
         // Them scene vao stage
         stage.setResizable(false);
@@ -95,60 +79,100 @@ public class BombermanGame extends Application {
         stage.show();
         AnimationTimer timer = new AnimationTimer() {
             @Override
-            public void handle(long l) {
+            public void start() {
+                super.start();
                 try {
-                    time = takeSeconds(l);
-
-                    if (start_time == TIME_COUNT_MAX) start_time = time;
-
-                    if (getTime() % 1 <= 0.012) System.out.println(getTime());
-
-                    render();
-                    update();
-                }
-                catch (Exception e) {
+                    setRoot("Menu");
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
-                end();
+
+            }
+
+            @Override
+            public void handle(long l) {
+                try {
+                    _time = takeSeconds(l);
+                    if (_start_time == TIME_COUNT_MAX) _start_time = _time;
+//                    game_period = l;
+
+                    if (Menu.hasClickedQuit()) {
+                        Platform.exit();
+                    }
+
+                    if (!Menu.hasClickedStart()) {
+                        hasStarted = false;
+                        return;
+                    } else if (!hasStarted) {
+                        gameWindow = new GameWindow(scene);
+                        scene.setRoot(root);
+
+                        hasStarted = true;
+                    }
+
+                    if (PauseScreen.hasPaused()) {
+                        gameWindow.handleGamePaused();
+                        return;
+                    }
+
+                    if (PauseScreen.hasBackedToMenu()) return;
+
+                    render();
+                    gameWindow.update(scene);
+
+                    if (gameWindow.playersLose()) {
+                        if (gameWindow.canOpenMenu()) setRoot("Menu");
+                        return;
+                    }
+                    if (gameWindow.playersWin()) {
+                        setRoot("Menu");
+                    }
+
+//                    game_period = l - game_period;
+//                    System.out.println(String.format("%.15f", game_period));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         };
         timer.start();
 
-        createMap();
-
-    }
-
-    public void createMap() {
-        bomber = GameMap.create();
-        System.out.println("Map created." + bomber.getX() + " " + bomber.getY());
-    }
-
-    public void update() {
-        GameMap.updateBomb();
-        GameMap.updateMovableEntities();
-        GameMap.updateStillObjects();
     }
 
     public void render() {
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        GameMap.render(gc);
+        gameWindow.render(gc);
     }
 
-//    public void handleEvent() {
-//
-//    }
+    // Change the root of this scene.
+    public static void setRoot(String name) throws IOException {
+        scene.setRoot((Parent) loadFxml(name));
+    }
+
+    public void addNodeToRoot(String name) throws IOException {
+        root.getChildren().add(loadFxml(name));
+    }
+
+    private static Node loadFxml(String name) throws IOException {
+        FXMLLoader fxmlLoader = new FXMLLoader(BombermanGame.class.getResource(name + ".fxml"));
+        return fxmlLoader.load();
+    }
+
+    //Set root of this scene to this class's canvas and set hasPause to true
+    public static void setRootToGameWindow() {
+        scene.setRoot(root);
+    }
 
     private double takeSeconds(long l) {
-        l %= Math.pow(10, 9 + TIME_COUNT_MAX_EXPONENT);
-        double result = (double) l / Math.pow(TIME_COUNT_MAX_BASE, 9);
-        return Double.parseDouble(String.format("%.9f", result));
+        double result = (double) l / 1e9; // l/10^9
+        return Double.parseDouble(String.format("%.4f", result));
     }
 
     public static double getTime() {
-        if (time < start_time) {
-            start_time = time;
+        if (_time < _start_time) {
+            _start_time = _time;
         }
 
-        return Double.parseDouble(String.format("%.9f", Math.abs(time - start_time)));
+        return Double.parseDouble(String.format("%.4f", Math.abs(_time - _start_time)));
     }
 }

@@ -1,13 +1,11 @@
-package uet.oop.bomberman.entities.Motion;
+package uet.oop.bomberman.Motion;
 
-import uet.oop.bomberman.Base.GameMap;
 import uet.oop.bomberman.Base.Point;
 import uet.oop.bomberman.BombermanGame;
 import uet.oop.bomberman.entities.MovableEntities.MovableEntity;
 import uet.oop.bomberman.graphics.Sprite;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
 public class EnhancedRandomMovement extends Movement {
@@ -79,7 +77,7 @@ public class EnhancedRandomMovement extends Movement {
 
         if (isTouchingAnObjectAhead()) {
             if (!isBlockedCompletely()) {
-                this.moveDiagonally();
+                this.moveDiagonally(1);
             }
             else {
                 //Set another direction
@@ -128,8 +126,10 @@ public class EnhancedRandomMovement extends Movement {
 
             this.start_time_with_newSpeed = current_time;
 
-            System.out.println("New speed: " + this.speed);
-            System.out.println("time for new speed: " + this.time_for_new_speed);
+//            System.out.println("New speed: " + this.speed);
+//            System.out.println("time for new speed: " + this.time_for_new_speed);
         }
     }
+
+
 }

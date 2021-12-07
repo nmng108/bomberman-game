@@ -12,6 +12,6 @@ module uet.oop.bomberman {
     exports uet.oop.bomberman;
     exports uet.oop.bomberman.Base;
     opens uet.oop.bomberman.Base to javafx.fxml;
-    exports uet.oop.bomberman.entities.Motion;
-    opens uet.oop.bomberman.entities.Motion to javafx.fxml;
+    exports uet.oop.bomberman.Motion;
+    opens uet.oop.bomberman.Motion to javafx.fxml;
 }

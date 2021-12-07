@@ -6,35 +6,63 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 
+import javafx.scene.Scene;
 import javafx.scene.canvas.GraphicsContext;
+
 import uet.oop.bomberman.BombermanGame;
-import uet.oop.bomberman.entities.Motion.Movement;
+import uet.oop.bomberman.Motion.Movement;
 import uet.oop.bomberman.entities.*;
+import uet.oop.bomberman.entities.Bomb.Bomb;
+import uet.oop.bomberman.entities.Item.Item;
+import uet.oop.bomberman.entities.Item.PowerUpBombs;
+import uet.oop.bomberman.entities.Item.PowerUpFlames;
+import uet.oop.bomberman.entities.Item.PowerUpSpeed;
 import uet.oop.bomberman.entities.MovableEntities.Balloon;
 import uet.oop.bomberman.entities.MovableEntities.Bomber;
 import uet.oop.bomberman.entities.MovableEntities.MovableEntity;
 import uet.oop.bomberman.entities.MovableEntities.OneAl;
 import uet.oop.bomberman.entities.StillEntities.*;
+import uet.oop.bomberman.entities.StillEntities.StableStillObject.Grass;
+import uet.oop.bomberman.entities.StillEntities.StableStillObject.Wall;
 import uet.oop.bomberman.graphics.Sprite;
 
 public class GameMap {
     private int level = 1;
-    private static int initialPlayerSpeed = 500;
-    private static int initialEnemySpeed = 40;
+    private static int initial_player_speed = 60;
+    private static int initial_enemy_speed = 200;
+    private static int oneal_approach_range = 100;
 
-    private static Bomber bomber;
 
     private static char[][] baseMap = new char[BombermanGame.HEIGHT][BombermanGame.WIDTH];
 
-    private static List<Entity> grass = new ArrayList<>();
+    private static List<Bomber> players = new ArrayList<>();
+    private static List<MovableEntity> bots = new ArrayList<>();
+    private static List<MovableEntity> killed_enemy_list = new ArrayList<>();
+    private static List<Item> items = new ArrayList<>();
+    private static List<Entity> backGroundObjects = new ArrayList<>();
     private static List<Entity> walls = new ArrayList<>();
-    private static List<MovableEntity> movableEntities = new ArrayList<>();
     private static List<BreakableStillObject> breakableStillObjects = new ArrayList<>();
     private static List<Bomb> bombs = new ArrayList<>();
 
 
+    public GameMap(int level) {
+        clearMap();
+        create("level" + String.valueOf(level));
+    }
+    public static Bomber getPlayer2() {
+        if (players.size() == 2) return players.get(1);
+        else return null;
+    }
+    /**
+     * Still Object(Wall, Brick, Portal)
+     * Breakable still objects: Brick, Portal(transfer from this list to backGroundObjects list when broken)
+     */
     public static List<Entity> getWalls() {
         return walls;
+    }
+
+    public static void addBackGroundObject(Entity entity) {
+        backGroundObjects.add(entity);
     }
 
     public static List<BreakableStillObject> getBreakableStillObjects() {
@@ -83,34 +111,42 @@ public class GameMap {
         return false;
     }
 
-    public static void removeStillObject(BreakableStillObject obj) {
-        if (breakableStillObjects.remove(obj)) {
+    public static boolean removeStillObject(BreakableStillObject obj) {
+        if (breakableStillObjects.contains(obj)) {
             int xUnit = obj.getX() / Sprite.SCALED_SIZE;
             int yUnit = obj.getY() / Sprite.SCALED_SIZE;
             baseMap[yUnit][xUnit] = ' ';
         }
+        return breakableStillObjects.remove(obj);
     }
 
-    public static void removeStillObjectAt(int x, int y) {
+    public static boolean removeStillObjectAt(int x, int y) {
         //never remove Wall
         BreakableStillObject object = getBreakableStillObjectAt(x, y);
 
-        if (object == null) return;
-
-        if (breakableStillObjects.remove(object)) {
+        if (breakableStillObjects.contains(object)) {
             int xUnit = object.getX() / Sprite.SCALED_SIZE;
             int yUnit = object.getY() / Sprite.SCALED_SIZE;
             baseMap[yUnit][xUnit] = ' ';
         }
+        return breakableStillObjects.remove(object);
     }
 
 
+    /**  Movable Entity  */
+    public static void addBot(MovableEntity entity) {
+        bots.add(entity);
+    }
+
     public static List<MovableEntity> getMovableEntities() {
-        return movableEntities;
+        List<MovableEntity> result = new ArrayList<>();
+        result.addAll(bots);
+        result.addAll(players);
+        return result;
     }
 
     public static MovableEntity getMovableEntityAt(MovableEntity except_movableEntity, int x, int y) {
-        for (MovableEntity movableEntity : movableEntities) {
+        for (MovableEntity movableEntity : bots) {
             if (movableEntity.equals(except_movableEntity)) continue;
 
             Point objectRange_from = new Point(movableEntity.getX(), movableEntity.getY());
@@ -122,14 +158,94 @@ public class GameMap {
                 return movableEntity;
             }
         }
+
+        for (Bomber player : players) {
+            if (player.equals(except_movableEntity)) continue;
+
+            Point objectRange_from = new Point(player.getX(), player.getY());
+            Point objectRange_to = new Point(player.getX() + Sprite.SCALED_SIZE - 1,
+                    player.getY() + Sprite.SCALED_SIZE - 1);
+
+            if ( (objectRange_from.x <= x && x <= objectRange_to.x)
+                    && (objectRange_from.y <= y && y <= objectRange_to.y) ) {
+                return player;
+            }
+        }
+
         return null;
     }
+
+    private static Bomber getPlayer(int ID) {
+        for (Bomber player : players) {
+            if (player.getID() == ID) return player;
+        }
+        return null;
+    }
+
+    public static List<Integer> getPlayerIDs() {
+        List<Integer> result = new ArrayList<>();
+
+        for (Bomber player : players) {
+            result.add(player.getID());
+        }
+
+        return result;
+    }
+
+    public static void setPlayer(int number, Scene scene) throws NullPointerException {
+        players.get(0).setOnPlayerEvents(scene, 1);
+
+        if (number == 2) {
+            Bomber player2 = new Bomber(generateRandomID(), 29, 11, initial_player_speed
+            );
+
+            //based on space and size of the map
+            players.add(player2);
+            player2.setOnPlayerEvents(scene, 2);
+        }
+    }
+
     //not used, may be removed
-    public static void removeMovableEntityAt(int x, int y) {
-        movableEntities.remove(getMovableEntityAt(null, x, y));
+    public static boolean removeMovableEntityAt(int x, int y) {
+        MovableEntity e = getMovableEntityAt(null, x, y);
+        if (e != null) {
+            if (e instanceof Bomber) return players.remove(e);
+            else return bots.remove(e);
+        }
+        return false;
     }
 
 
+    /**  Item  */
+    public static List<Item> getItems() {
+        return items;
+    }
+
+    public static Item getItemAt(int x, int y) {
+        for (Item item : items) {
+            Point item_from = new Point(item.getX(), item.getY());
+            Point item_to = new Point(item.getX() + Sprite.SCALED_SIZE - 1,
+                    item.getY() + Sprite.SCALED_SIZE - 1);
+
+            if ( (item_from.x <= x && x <= item_to.x)
+                    && (item_from.y <= y && y <= item_to.y) ) {
+                return item;
+            }
+        }
+
+        return null;
+    }
+
+    public static boolean removeItemAt(int x, int y) {
+        return items.remove(getItemAt(x, y));
+    }
+
+    public static boolean removeItem(Item item) {
+        return items.remove(item);
+    }
+
+
+    /**  Bomb  */
     public static List<Bomb> getBombs() {
         return bombs;
     }
@@ -148,26 +264,37 @@ public class GameMap {
         return null;
     }
 
-    public static boolean addBomb(Bomb bomb) {
-        return bombs.add(bomb);
+    /**
+     * The bug rises explicitly by adding new bomb.
+     * @param bomb
+     * @return
+     */
+    public static Bomb addBomb(Bomb bomb) {
+        for (Integer playerID : getPlayerIDs()) {
+            if (playerID == bomb.getOwnerID()) {
+                bombs.add(bomb);
+                return bomb;
+            }
+        }
+        System.out.println("The old bombers haven't been removed completely.");
+        return null;
     }
 
-    public static boolean removeBomb(Bomb bomb) {
-        return bombs.remove(bomb);
-    }
 
-
-    public static Entity getObjectAt(int x, int y) {
+    /**  Methods for common objects.  */
+    public static Entity getObjectAt(MovableEntity except_movableEntity, int x, int y) {
         Entity e;
 
-        e = getMovableEntityAt(null, x, y);
+        e = getMovableEntityAt(except_movableEntity, x, y);
         if (e != null) return e;
 
         e = getStillObjectAt(x, y);
         if (e != null) return e;
 
         e = getBombAt(x, y);
+        if (e != null) return e;
 
+        e = getItemAt(x, y);
         return e;
     }
 
@@ -176,36 +303,30 @@ public class GameMap {
                 || getStillObjectAt(x, y) != null
                 || getBombAt(x, y) != null;
     }
-    //a soft object is an object that can be removed.
-    public static boolean containsSoftObjectAt(MovableEntity except_movableEntity, int x, int y) {
-        return getMovableEntityAt(except_movableEntity, x, y) != null
-                || getBreakableStillObjectAt(x, y) != null;
-    }
-    //not used, may be removed
-    public static void removeObjectAt(int x, int y) {
-        if (movableEntities.remove(getMovableEntityAt(null, x, y))) return;
-        if (bombs.remove(getBombAt(x, y))) return;
-        removeStillObjectAt(x, y);
-    }
 
-    public static void removeObject(Entity entity) {
-        if (entity instanceof MovableEntity) {
-            movableEntities.remove(entity);
-            return;
+    public static boolean removeObject(Entity entity) {
+        if (entity instanceof Bomber) {
+            return players.remove(entity);
+        }
+
+        if (entity instanceof MovableEntity) { //means bot
+            return bots.remove(entity);
         }
 
         if (entity instanceof Bomb) {
-            bombs.remove(entity);
-            return;
+            return bombs.remove(entity);
         }
 
-        removeStillObject((BreakableStillObject) entity);
+        return removeStillObject((BreakableStillObject) entity);
     }
 
-    //initial entities from text map
-    public static Bomber create() {
+
+    /**
+     * Initial entities from text map.
+     */
+    public static void create(String level) {
         try {
-            FileInputStream in = new FileInputStream("res/levels/Level1.txt");
+            FileInputStream in = new FileInputStream("res/levels/" + level + ".txt");
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
             String line = reader.readLine();
             if (line != null) {
@@ -219,23 +340,21 @@ public class GameMap {
                 for (int j = 0; j < BombermanGame.HEIGHT; j++) {
 
                     if (baseMap[j][i] != '#') { //if being not Wall
-                        grass.add(new Grass(i, j, Sprite.grass.getFxImage()));
+                        backGroundObjects.add(new Grass(i, j));
                     }
 
                     switch (baseMap[j][i]) {
-                        case '#' -> walls.add(new Wall(i, j, Sprite.wall.getFxImage()));
-                        case '*' -> breakableStillObjects.add(new Brick(i, j, Sprite.brick.getFxImage()));
-                        case 'x' -> breakableStillObjects.add(new Portal(i, j, Sprite.portal.getFxImage()));
+                        case '#' -> walls.add(new Wall(i, j));
+                        case '*' -> breakableStillObjects.add(new Brick(i, j));
+                        case 'x' -> breakableStillObjects.add(new Portal(i, j));
 
+                        case 'b' -> items.add(new PowerUpBombs(i, j));
+                        case 's' -> items.add(new PowerUpSpeed(i, j));
+                        case 'f' -> items.add(new PowerUpFlames(i, j));
 
-                        case 'p' -> {
-                            bomber = new Bomber(i, j, initialPlayerSpeed, Sprite.player_up.getFxImage());
-                            movableEntities.add(bomber);
-                        }
-                        case '1' -> movableEntities.add(new Balloon(i, j, initialEnemySpeed,
-                                Sprite.balloom_right1.getFxImage()));
-                        case '2' -> movableEntities.add(new OneAl(i, j, initialEnemySpeed,
-                                Sprite.oneal_right1.getFxImage(), 60));
+                        case 'p' -> players.add(new Bomber(generateRandomID(), i, j, initial_player_speed));
+                        case '1' -> bots.add(new Balloon(i, j, initial_enemy_speed));
+                        case '2' -> bots.add(new OneAl(i, j, initial_enemy_speed, oneal_approach_range));
                     }
                 }
             }
@@ -245,16 +364,31 @@ public class GameMap {
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
-        return bomber;
     }
 
+    public static void clearMap() {
+        for (char[] chars : baseMap) {
+            chars = null;
+        }
+        players.clear();
+        System.out.println(players.size());
+        bots.clear();
+        killed_enemy_list.clear();
+        items.clear();
+        backGroundObjects.clear();
+        walls.clear();
+        breakableStillObjects.clear();
+        bombs.clear();
+    }
     //used in the method render() of main class.
     public static void render(GraphicsContext graphicsContext) {
-        grass.forEach(v -> v.render(graphicsContext));
+        backGroundObjects.forEach(v -> v.render(graphicsContext));
         walls.forEach(v -> v.render(graphicsContext));
-        breakableStillObjects .forEach(v -> v.render(graphicsContext));
+        items.forEach(v -> v.render(graphicsContext));
         bombs.forEach(v -> v.render(graphicsContext));
-        movableEntities.forEach(v -> v.render(graphicsContext));
+        breakableStillObjects .forEach(v -> v.render(graphicsContext));
+        bots.forEach(v -> v.render(graphicsContext));
+        players.forEach(v -> v.render(graphicsContext));
     }
 
     //3 entity updating methods below are used in the method update() of main class.
@@ -268,7 +402,9 @@ public class GameMap {
 
                 if (object.isBroken()) object.update();
 
-                if (object.isDeleted()) break;
+                if (object.isDeleted()) {
+                    break;
+                }
             }
 
             if (object.isDeleted()) removeObject(object);
@@ -288,13 +424,37 @@ public class GameMap {
                 if (entity.isDeleted()) break;
             }
 
-            if (entity.isDeleted()) removeObject(entity);
+            if (entity != null && entity.isDeleted()) {
+                removeObject(entity);
+            }
         }
     }
 
-    public static void updateBomb() {
+    public static void updatePlayers(Scene scene) {
+        Bomber player = null;
+        int index = 0;
+
+        while(index < players.size()) {
+            for (; index < players.size(); index++) {
+                player = players.get(index);
+
+                player.update();
+
+                if (player.isDeleted()) break;
+            }
+
+            if (player.isDeleted()) {
+                player.removeHandler(scene, players.indexOf(player) + 1);
+//                players.remove(player);
+            }
+        }
+    }
+
+    public static void updateBombs() throws NullPointerException {
         Bomb bomb = null;
         int index = 0;
+
+        killed_enemy_list.clear();
 
         while (index < GameMap.getBombs().size()) {
             for (; index < GameMap.getBombs().size(); index++) {
@@ -306,12 +466,18 @@ public class GameMap {
             }
 
             if (bomb.isDone()) {
-                GameMap.removeBomb(bomb);
-                bomber.increaseOneBomb();
+                if (bombs.remove(bomb)) {
+                    killed_enemy_list.addAll(bomb.getKilledEnemies());
+                    Bomber owner = GameMap.getPlayer(bomb.getOwnerID());
+                    if (owner != null) owner.takeBackOneBomb();
+                }
             }
         }
     }
 
+    public static List<MovableEntity> getKilledEnemies() {
+        return new ArrayList<>(killed_enemy_list);
+    }
 
 
     /**
@@ -323,103 +489,86 @@ public class GameMap {
      *          +, 0 (minimum) if touching a still object from the beginning while moving LEFT or UP.
      *          +, 32 if touching a still object from the beginning while moving RIGHT or DOWN.
      */
-    public static int distanceToStillObjectAhead(Point from, Point to) throws NullPointerException {
-        int direction = determinesDirection(from, to);
+    public static double distanceToStillObjectAhead(MovableEntity entity) throws NullPointerException {
+        Point from = new Point(entity.getX(), entity.getY());
 
-        switch (direction) {
+        switch (entity.getDirection()) {
             case Movement.RIGHT -> {
-                final int i_yUNIT_SOURCE = from.y / Sprite.SCALED_SIZE;
-                final double d_xUNIT_DEST = (double) to.x / Sprite.SCALED_SIZE;
+                Entity obj;
 
-                for (int xUnit = (from.x / Sprite.SCALED_SIZE) + 1;
-                        xUnit <= d_xUNIT_DEST + 1 - 1 / Sprite.SCALED_SIZE; xUnit++) {
-
-                    if (getStillObjectAt(xUnit * Sprite.SCALED_SIZE,
-                                            i_yUNIT_SOURCE * Sprite.SCALED_SIZE) != null) {
-                        return xUnit * Sprite.SCALED_SIZE - from.x;
+                for (int _i_xUnit = entity.getX() / Sprite.SCALED_SIZE + 1; ; _i_xUnit++) {
+                    //left-top angle of the object
+                    obj = getStillObjectAt(_i_xUnit * Sprite.SCALED_SIZE, from.y);
+                    if (obj != null) {
+                        return _i_xUnit * Sprite.SCALED_SIZE - (entity.getX() + Sprite.SCALED_SIZE);
                     }
 
-                    // if starting point's yUnit is a decimal, we'll handle the point
-                    //  besides the above point because this entity lay on that too.
-                    if (from.y % Sprite.SCALED_SIZE != 0) {
-                        if (getStillObjectAt(xUnit * Sprite.SCALED_SIZE,
-                                                (i_yUNIT_SOURCE + 1) * Sprite.SCALED_SIZE) != null) {
-                            return xUnit * Sprite.SCALED_SIZE - from.x;
-                        }
+                    //left-bottom angle of the object
+                    obj = getStillObjectAt(_i_xUnit * Sprite.SCALED_SIZE, from.y + Sprite.SCALED_SIZE - 1);
+                    if (obj != null) {
+                        return _i_xUnit * Sprite.SCALED_SIZE - (entity.getX() + Sprite.SCALED_SIZE);
                     }
                 }
             }
 
             case Movement.LEFT -> {
-                final int i_Y_UNIT = from.y / Sprite.SCALED_SIZE;
-                final double d_X_UNIT_DEST = (double) to.x / Sprite.SCALED_SIZE;
+                Entity obj;
 
-                for (int xUnit = (from.x / Sprite.SCALED_SIZE); xUnit - 1 / Sprite.SCALED_SIZE >= d_X_UNIT_DEST; xUnit--) {
-
-                    if (getStillObjectAt( xUnit * Sprite.SCALED_SIZE - 1,
-                                            i_Y_UNIT * Sprite.SCALED_SIZE) != null) {
-                        return from.x - xUnit * Sprite.SCALED_SIZE;
+                for (int _i_xUnit = entity.getX() / Sprite.SCALED_SIZE; ; _i_xUnit--) {
+                    //left-top angle of the object
+                    obj = getStillObjectAt(_i_xUnit * Sprite.SCALED_SIZE, from.y);
+                    if (obj != null) {
+                        return entity.getX() - (_i_xUnit + 1) * Sprite.SCALED_SIZE;
                     }
 
-                    // if starting point's yUnit is a decimal, we'll handle the point
-                    //  besides the above point because this entity lay on that too.
-                    if (from.y % Sprite.SCALED_SIZE != 0) {
-                        if (getStillObjectAt( xUnit  * Sprite.SCALED_SIZE - 1,
-                                                (i_Y_UNIT + 1) * Sprite.SCALED_SIZE) != null) {
-                            return from.x - xUnit * Sprite.SCALED_SIZE;
-                        }
+                    //left-bottom angle of the object
+                    obj = getStillObjectAt(_i_xUnit * Sprite.SCALED_SIZE, from.y + Sprite.SCALED_SIZE - 1);
+                    if (obj != null) {
+                        return entity.getX() - (_i_xUnit + 1) * Sprite.SCALED_SIZE;
                     }
                 }
-
             }
 
             case Movement.DOWN -> {
-                final int i_X_UNIT = from.x / Sprite.SCALED_SIZE;
-                final double d_Y_UNIT_DEST = (double) to.y / Sprite.SCALED_SIZE;
+                Entity obj;
 
-                for (int yUnit = (from.y / Sprite.SCALED_SIZE) + 1;
-                        yUnit <= d_Y_UNIT_DEST + 1 - 1 / Sprite.SCALED_SIZE; yUnit++) {
-
-                    if (getStillObjectAt(i_X_UNIT * Sprite.SCALED_SIZE,
-                                            yUnit * Sprite.SCALED_SIZE) != null) {
-                        return yUnit * Sprite.SCALED_SIZE - from.y;
+                for (int _i_yUnit = entity.getY() / Sprite.SCALED_SIZE + 1; ; _i_yUnit++) {
+                    //left-top angle of the object
+                    obj = getStillObjectAt(entity.getX(), _i_yUnit * Sprite.SCALED_SIZE);
+                    if (obj != null) {
+                        return _i_yUnit * Sprite.SCALED_SIZE - (entity.getY() + Sprite.SCALED_SIZE);
                     }
 
-                    // if starting point's xUnit is a decimal, we'll handle the point
-                    //  besides the above point because this entity lay on that too.
-                    if (from.x % Sprite.SCALED_SIZE != 0) {
-                        if (getStillObjectAt((i_X_UNIT + 1) * Sprite.SCALED_SIZE,
-                                                yUnit * Sprite.SCALED_SIZE) != null) {
-                            return yUnit * Sprite.SCALED_SIZE - from.y;
-                        }
+                    //right-top angle of the object
+                    obj = getStillObjectAt(entity.getX() + Sprite.SCALED_SIZE - 1,
+                            _i_yUnit * Sprite.SCALED_SIZE);
+                    if (obj != null) {
+                        return _i_yUnit * Sprite.SCALED_SIZE - (entity.getY() + Sprite.SCALED_SIZE);
                     }
                 }
             }
 
             case Movement.UP -> {
-                final int i_X_UNIT = from.x / Sprite.SCALED_SIZE;
-                final double d_Y_UNIT_DEST = (double) to.y / Sprite.SCALED_SIZE;
+                Entity obj;
 
-                for (int yUnit = (from.y / Sprite.SCALED_SIZE);
-                        yUnit - 1 / Sprite.SCALED_SIZE >= d_Y_UNIT_DEST; yUnit--) {
-
-                    if (getStillObjectAt(i_X_UNIT * Sprite.SCALED_SIZE,
-                                            yUnit * Sprite.SCALED_SIZE - 1) != null) {
-                        return from.y - yUnit * Sprite.SCALED_SIZE;
+                for (int _i_yUnit = entity.getY() / Sprite.SCALED_SIZE ; ; _i_yUnit--) {
+                    //left-top angle of the object
+                    obj = getStillObjectAt(entity.getX(), _i_yUnit * Sprite.SCALED_SIZE);
+                    if (obj != null) {
+                        return entity.getY() - (_i_yUnit + 1) * Sprite.SCALED_SIZE;
                     }
 
-                    // if starting point's xUnit is a decimal, we'll handle the point
-                    //  besides the above point because this entity lay on that too.
-                    if (from.x % Sprite.SCALED_SIZE != 0) {
-                        if (getStillObjectAt((i_X_UNIT + 1) * Sprite.SCALED_SIZE,
-                                                yUnit * Sprite.SCALED_SIZE - 1) != null) {
-                            return from.y - yUnit * Sprite.SCALED_SIZE;
-                        }
+                    //right-top angle of the object
+                    obj = getStillObjectAt(entity.getX() + Sprite.SCALED_SIZE - 1,
+                            _i_yUnit * Sprite.SCALED_SIZE);
+                    if (obj != null) {
+                        return entity.getY() - (_i_yUnit + 1) * Sprite.SCALED_SIZE;
                     }
                 }
             }
         }
-        return Integer.MAX_VALUE;
+
+        return Double.MAX_VALUE;
     }
 
     /**
@@ -431,13 +580,14 @@ public class GameMap {
      *          +, 0 (minimum) if touching a still object from the beginning while moving LEFT or UP.
      *          +, 32 if touching a still object from the beginning while moving RIGHT or DOWN.
      */
-    public static int distanceToMovableEntityAhead(Entity source_entity, Point from, Point to) throws NullPointerException {
-        int direction = determinesDirection(from, to);
-        int minDistance = Integer.MAX_VALUE;
+    public static double distanceToMovableEntityAhead(Entity source_entity, Point from, Point to)
+            throws NullPointerException {
+        int direction = determineDirection(from, to);
+        double minDistance = Double.MAX_VALUE;
 
         switch (direction) {
             case Movement.UP -> {
-                for(MovableEntity movableEntity : movableEntities) {
+                for(MovableEntity movableEntity : bots) {
                     if (movableEntity.equals(source_entity)) continue;
 
                     if ( Math.abs(movableEntity.getX() - from.x) < Sprite.SCALED_SIZE
@@ -454,7 +604,7 @@ public class GameMap {
             }
 
             case Movement.DOWN -> {
-                for(MovableEntity movableEntity : movableEntities) {
+                for(MovableEntity movableEntity : bots) {
                     if (movableEntity.equals(source_entity)) continue;
 
                     if ( Math.abs(movableEntity.getX() - from.x) < Sprite.SCALED_SIZE
@@ -471,7 +621,7 @@ public class GameMap {
             }
 
             case Movement.LEFT -> {
-                for(MovableEntity movableEntity : movableEntities) {
+                for(MovableEntity movableEntity : bots) {
                     if (movableEntity.equals(source_entity)) continue;
 
                     if ( Math.abs(movableEntity.getY() - from.y) < Sprite.SCALED_SIZE
@@ -488,7 +638,7 @@ public class GameMap {
             }
 
             case Movement.RIGHT -> {
-                for(MovableEntity movableEntity : movableEntities) {
+                for(MovableEntity movableEntity : bots) {
                     if (movableEntity.equals(source_entity)) continue;
 
                     if ( Math.abs(movableEntity.getY() - from.y) < Sprite.SCALED_SIZE
@@ -509,11 +659,17 @@ public class GameMap {
         return minDistance;
     }
 
-    public static double distanceToPlayer(Point e) {
-        double x_difference = Math.abs(e.x - bomber.getX());
-        double y_difference = Math.abs(e.y - bomber.getY());
+    public static double[] distanceToPlayers(Point e) throws NullPointerException {
+        double[] distances = new double[players.size()];
 
-        return Math.sqrt(Math.pow(x_difference, 2) + Math.pow(y_difference, 2));
+        for (int i = 0; i < players.size() ; i++) {
+            double x_difference = Math.abs(e.x - players.get(i).getX());
+            double y_difference = Math.abs(e.y - players.get(i).getY());
+
+            distances[i] = Math.sqrt(Math.pow(x_difference, 2) + Math.pow(y_difference, 2));
+        }
+
+        return distances;
     }
 
     /**
@@ -524,7 +680,7 @@ public class GameMap {
      * @return
      * @throws NullPointerException
      */
-    private static int determinesDirection(Point from, Point to) throws NullPointerException {
+    private static int determineDirection(Point from, Point to) throws NullPointerException {
         if (from == null || to == null) {
             throw new NullPointerException("starting point or destination point is null");
         }
@@ -548,5 +704,16 @@ public class GameMap {
         }
 
         return direction;
+    }
+
+    private static int generateRandomID() {
+        Random random = new Random();
+        int result;
+
+        do {
+            result = random.nextInt(100000, 999999);
+        } while (getPlayerIDs().contains(result));
+
+        return result;
     }
 }

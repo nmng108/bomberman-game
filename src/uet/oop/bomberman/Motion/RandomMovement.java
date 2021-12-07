@@ -1,4 +1,4 @@
-package uet.oop.bomberman.entities.Motion;
+package uet.oop.bomberman.Motion;
 
 import uet.oop.bomberman.Base.Point;
 import uet.oop.bomberman.BombermanGame;
@@ -69,7 +69,7 @@ public class RandomMovement extends Movement {
 
         if (isTouchingAnObjectAhead()) {
             if (!isBlockedCompletely()) {
-                this.moveDiagonally();
+                this.moveDiagonally(1);
             }
             else {
                 //Set another direction
