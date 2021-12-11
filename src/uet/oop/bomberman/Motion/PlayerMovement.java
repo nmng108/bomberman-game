@@ -55,20 +55,20 @@ public class PlayerMovement extends Movement {
 
                 if (canStepOverBomb) {
                     switch (this.direction) {
-                        //speed up by an old value (1->2) in order to step over the bomb faster
-                        case RIGHT -> x += 2;
-                        case LEFT -> x -= 2;
-                        case UP -> y -= 2;
-                        case DOWN -> y += 2;
+                        //speed up by an old value (1->1.5) in order to step over the bomb faster
+                        case RIGHT -> x += 1.5;
+                        case LEFT -> x -= 1.5;
+                        case UP -> y -= 1.5;
+                        case DOWN -> y += 1.5;
                     }
 //                    moveCLoserToObject(); //still got mistake
                 }
-
-                //if stepped out of any bomb just placed, we just take care of the rest placed bombs in each move.
-                scanPlacedBombs();
             }
             return new Point(x, y);
         }
+
+        //if stepped out of any bomb just placed, we just take care of the rest placed bombs in each move.
+        scanPlacedBombs();
 
         switch (direction) {
             case RIGHT -> x += pixels_foreach_unitOfMoveLength;
@@ -82,15 +82,17 @@ public class PlayerMovement extends Movement {
     }
 
     /**
-     * @return true if any player's pixel is on the bomb that placed
+     * @return true if any pixel of bomber is on the bomb that placed
      */
-    private boolean isOnBombPlaced(Bomb just_spawn_bomb) {
+    private boolean isOnBombPlaced(Bomb just_placed_bomb) {
+        if (!bombs_standing_on.contains(just_placed_bomb)) return false;
+
         Point player_from = new Point(x, y);
         Point player_to = new Point(x + Sprite.SCALED_SIZE - 1, y + Sprite.SCALED_SIZE - 1);
 
-        Point bomb_from = new Point(just_spawn_bomb.getX(), just_spawn_bomb.getY());
-        Point bomb_to = new Point(just_spawn_bomb.getX() + Sprite.SCALED_SIZE - 1,
-                just_spawn_bomb.getY() + Sprite.SCALED_SIZE - 1);
+        Point bomb_from = new Point(just_placed_bomb.getX(), just_placed_bomb.getY());
+        Point bomb_to = new Point(just_placed_bomb.getX() + Sprite.SCALED_SIZE - 1,
+                just_placed_bomb.getY() + Sprite.SCALED_SIZE - 1);
 
 
         for (int i = player_from.x; i <= player_to.x; i++) {
@@ -109,7 +111,7 @@ public class PlayerMovement extends Movement {
     //Based on movement's direction.
     private void checkAbilityToStepOverBomb() {
         for (Bomb bomb : bombs_standing_on) {
-            if (getObjectAhead() == bomb) { //
+            if (this.getObjectAhead() == bomb) { //
                 this.canStepOverBomb = true;
                 return;
             }

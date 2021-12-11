@@ -25,9 +25,9 @@ public class BombermanGame extends Application {
     public static final int HEIGHT = 13;
 
     private GraphicsContext gc;
-    private static Canvas canvas;
+    private Canvas canvas;
     private static Group root;
-    public static Scene scene;
+    private static Scene scene;
 
     private GameWindow gameWindow;
 
@@ -39,16 +39,12 @@ public class BombermanGame extends Application {
     private static boolean hasStarted = false;
 
 
-    public static Canvas getGameWindowCanvas() {
-        return canvas;
-    }
-
     public static void main(String[] args) {
         Application.launch(BombermanGame.class);
     }
 
     @Override
-    public void start(Stage stage) throws IOException {
+    public void start(Stage stage) {
         // Tao Canvas
         canvas = new Canvas(Sprite.SCALED_SIZE * WIDTH,
                 Sprite.SCALED_SIZE * HEIGHT + GameWindow.INFORMATION_AREA_HEIGHT);
@@ -117,7 +113,7 @@ public class BombermanGame extends Application {
 
                     if (PauseScreen.hasBackedToMenu()) return;
 
-                    render();
+                    gameWindow.render(canvas);
                     gameWindow.update(scene);
 
                     if (gameWindow.playersLose()) {
@@ -139,18 +135,10 @@ public class BombermanGame extends Application {
 
     }
 
-    public void render() {
-        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        gameWindow.render(gc);
-    }
 
     // Change the root of this scene.
     public static void setRoot(String name) throws IOException {
         scene.setRoot((Parent) loadFxml(name));
-    }
-
-    public void addNodeToRoot(String name) throws IOException {
-        root.getChildren().add(loadFxml(name));
     }
 
     private static Node loadFxml(String name) throws IOException {

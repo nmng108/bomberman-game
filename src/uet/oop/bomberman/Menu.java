@@ -41,6 +41,7 @@ public class Menu {
 
         String result = choiceBox.getValue();
         if (result.equals("2 người chơi")) players_number = 2;
+        else players_number = 1;
 
         BombermanGame.setRootToGameWindow();
     }

@@ -20,14 +20,14 @@ public abstract class Movement {
     protected double pixels_foreach_unitOfMoveLength = 1;
     /**
      * Speed is the number of units of move length a character can move continuously
-     * per 1 second.
+     * per 1 second. ('unit of move length' can be 1, 2 pixels,...)
      * Maximum value is about 70.
      */
     protected int speed;
     /** period = 1 / speed, is the number of seconds needed to move 1 unit. */
     protected double period;
     /** calc_period is a supporting variable, used to make new time mark right at the time a new move is done. */
-    protected double calc_period = 0;
+    protected double calc_period;
 
     protected int x, y;
     protected int direction = FREEZE;
@@ -66,7 +66,8 @@ public abstract class Movement {
     }
 
     public void speedUp(int n) {
-        this.speed += n;
+        if (this.speed >= 70) pixels_foreach_unitOfMoveLength += 0.1;
+        else this.speed += n;
         this.period = (double) 1 / this.speed;
     }
 
@@ -116,7 +117,7 @@ public abstract class Movement {
     }
 
     //8 cases at all.
-    protected void moveDiagonally(int pixels_foreach_move) {
+    protected void moveDiagonally(double pixels_foreach_move) {
         if (diagonalDirection == null) {
             System.out.println("CANT MOVE DIAGONALLY");
             return;
@@ -376,16 +377,9 @@ public abstract class Movement {
     }
 
     //Based on direction.
-    //Have the same codes to isTouchingAnObjectAhead() method.
-    // Unused
-    protected boolean canMove(int direction) {
-        return false;
-    }
-
-    //Based on direction.
     public Set<Entity> getSteppedOverObjects(MovableEntity except_entity) {
         HashSet<Entity> result = new HashSet<>();
-        Entity entity = null;
+        Entity entity;
 
         switch (this.direction) {
             case UP -> {
@@ -484,5 +478,5 @@ public abstract class Movement {
     /**
      * Used with different purposes.
      */
-    public abstract void setDirection(int d);
+    protected void setDirection(int d){}
 }

@@ -29,8 +29,12 @@ public class Portal extends BreakableStillObject {
         int yUnit = this.y / Sprite.SCALED_SIZE;
 
         for (int i = 0; i < quantity; i++) {
-            GameMap.addBot(new OneAl(xUnit, yUnit, 40,
-                    100));
+            try {
+                GameMap.addBot(new OneAl(xUnit, yUnit, 40,
+                        100));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }

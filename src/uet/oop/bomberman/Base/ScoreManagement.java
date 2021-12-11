@@ -3,6 +3,7 @@ package uet.oop.bomberman.Base;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import uet.oop.bomberman.entities.Entity;
 import uet.oop.bomberman.entities.MovableEntities.Balloon;
 import uet.oop.bomberman.entities.MovableEntities.Bomber;
@@ -15,7 +16,6 @@ import java.util.List;
 public class ScoreManagement {
     public static final int BALLOON = 3;
     public static final int ONEAL = 5;
-    public static final int PLAYER = 10;
 
     private List<Integer> player_ID_list;
     private List<Score> scores_array = new ArrayList<>();
@@ -42,19 +42,22 @@ public class ScoreManagement {
         for (Entity enemy : killedEnemies) {
             if (enemy instanceof Balloon) scores_array.get(index).current += ScoreManagement.BALLOON; //still got error
             else if (enemy instanceof OneAl) scores_array.get(index).current += ScoreManagement.ONEAL;
-            else if (enemy instanceof Bomber) {
-                if (((Bomber) enemy).getID() == player_ID) {
-                    scores_array.get(index).current += ScoreManagement.PLAYER;
-                    System.out.println("1 PLAYER killed");
-                }
-            }
-            else System.out.println("SCORE did not increase.");
         }
     }
 
     public void render(GraphicsContext gc) {
-        gc.setFill(Color.YELLOWGREEN);
-        gc.fillText("Điểm: "+ scores_array.get(0).current, 50, 485, 200);
+        gc.setFont(new Font("Arial", 25));
+
+        if (scores_array.size() > 0) {
+            gc.setFill(Color.YELLOWGREEN);
+            gc.fillText("Điểm người chơi 1: " + scores_array.get(0).current, 30, 485, 200);
+        }
+        else throw new NullPointerException("The score array is null");
+
+        if (scores_array.size() == 2) {
+            gc.setFill(Color.BLUEVIOLET);
+            gc.fillText("Điểm người chơi 2: " + scores_array.get(0).current, 750, 485, 200);
+        }
     }
 
     public int[] getScoreArray() {

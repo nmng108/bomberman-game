@@ -9,15 +9,14 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class RandomMovement extends Movement {
-    private int remaining_cells = 1; //corresponding to (1 * DISPLAY_CELL's SIZE)
-    private int remaining_steps = 0;
+    private double remaining_steps = 0;
 
     public RandomMovement(MovableEntity entity, int x, int y, int speed) {
         super(entity, x, y, speed);
     }
 
     @Override
-    public void setDirection(int except_direction) {
+    protected void setDirection(int except_direction) {
         Random rand = new Random();
         ArrayList<Integer> canMove = new ArrayList<>();
 
@@ -41,11 +40,14 @@ public class RandomMovement extends Movement {
         }
         while (isBlockedCompletely());
 
-        do {
-            this.remaining_cells = rand.nextInt(5);
-        } while (this.remaining_cells == 0);
 
-        this.remaining_steps = this.remaining_cells * Sprite.SCALED_SIZE;
+        double remaining_cells = 1; //corresponding to (1 * DISPLAY_CELL's SIZE)
+
+        do {
+            remaining_cells = rand.nextDouble(6);
+        } while (remaining_cells == 0);
+
+        this.remaining_steps = remaining_cells * Sprite.SCALED_SIZE;
     }
 
     @Override

@@ -2,7 +2,6 @@ package uet.oop.bomberman.Base;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 
@@ -10,6 +9,7 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.GraphicsContext;
 
 import uet.oop.bomberman.BombermanGame;
+import uet.oop.bomberman.Menu;
 import uet.oop.bomberman.Motion.Movement;
 import uet.oop.bomberman.entities.*;
 import uet.oop.bomberman.entities.Bomb.Bomb;
@@ -27,10 +27,9 @@ import uet.oop.bomberman.entities.StillEntities.StableStillObject.Wall;
 import uet.oop.bomberman.graphics.Sprite;
 
 public class GameMap {
-    private int level = 1;
-    private static int initial_player_speed = 60;
-    private static int initial_enemy_speed = 200;
-    private static int oneal_approach_range = 100;
+    private static final int PLAYER_SPEED = 60;
+    private final int ENEMY_SPEED;
+    private final int ONEAL_PURSUIT_RANGE;
 
 
     private static char[][] baseMap = new char[BombermanGame.HEIGHT][BombermanGame.WIDTH];
@@ -45,14 +44,17 @@ public class GameMap {
     private static List<Bomb> bombs = new ArrayList<>();
 
 
-    public GameMap(int level) {
+    public GameMap(int level, Scene scene) {
+        //        PLAYER_SPEED = 50 + 3 * level;
+        ENEMY_SPEED = 45 + 5 * level;
+        ONEAL_PURSUIT_RANGE = 6 + level;
+
         clearMap();
-        create("level" + String.valueOf(level));
+        create(level);
+        setPlayer(Menu.getPlayersNumber(), scene);
     }
-    public static Bomber getPlayer2() {
-        if (players.size() == 2) return players.get(1);
-        else return null;
-    }
+
+
     /**
      * Still Object(Wall, Brick, Portal)
      * Breakable still objects: Brick, Portal(transfer from this list to backGroundObjects list when broken)
@@ -70,30 +72,12 @@ public class GameMap {
     }
 
     public static BreakableStillObject getBreakableStillObjectAt(int x, int y) {
-        for (BreakableStillObject object : breakableStillObjects) {
-            Point objectRange_from = new Point(object.getX(), object.getY());
-            Point objectRange_to = new Point(object.getX() + Sprite.SCALED_SIZE - 1,
-                    object.getY() + Sprite.SCALED_SIZE - 1);
-
-            if ( (objectRange_from.x <= x && x <= objectRange_to.x)
-                    && (objectRange_from.y <= y && y <= objectRange_to.y) ) {
-                return object;
-            }
-        }
-        return null;
+        return identifyObjectAt(x, y, breakableStillObjects);
     }
 
     public static Entity getStillObjectAt(int x, int y) {
-        for (Entity wall : walls) {
-            Point objectRange_from = new Point(wall.getX(), wall.getY());
-            Point objectRange_to = new Point(wall.getX() + Sprite.SCALED_SIZE - 1,
-                    wall.getY() + Sprite.SCALED_SIZE - 1);
-
-            if ( (objectRange_from.x <= x && x <= objectRange_to.x)
-                    && (objectRange_from.y <= y && y <= objectRange_to.y) ) {
-                return wall;
-            }
-        }
+        Entity w = identifyObjectAt(x, y, walls);
+        if (w != null) return w;
 
         return getBreakableStillObjectAt(x, y);
     }
@@ -120,22 +104,14 @@ public class GameMap {
         return breakableStillObjects.remove(obj);
     }
 
-    public static boolean removeStillObjectAt(int x, int y) {
-        //never remove Wall
-        BreakableStillObject object = getBreakableStillObjectAt(x, y);
-
-        if (breakableStillObjects.contains(object)) {
-            int xUnit = object.getX() / Sprite.SCALED_SIZE;
-            int yUnit = object.getY() / Sprite.SCALED_SIZE;
-            baseMap[yUnit][xUnit] = ' ';
-        }
-        return breakableStillObjects.remove(object);
-    }
-
 
     /**  Movable Entity  */
     public static void addBot(MovableEntity entity) {
         bots.add(entity);
+    }
+
+    public static List<MovableEntity> getBots() {
+        return bots;
     }
 
     public static List<MovableEntity> getMovableEntities() {
@@ -146,33 +122,16 @@ public class GameMap {
     }
 
     public static MovableEntity getMovableEntityAt(MovableEntity except_movableEntity, int x, int y) {
-        for (MovableEntity movableEntity : bots) {
-            if (movableEntity.equals(except_movableEntity)) continue;
+        MovableEntity me = identifyObjectAt(x, y, bots);
+        if (me != null && me != except_movableEntity) return me;
 
-            Point objectRange_from = new Point(movableEntity.getX(), movableEntity.getY());
-            Point objectRange_to = new Point(movableEntity.getX() + Sprite.SCALED_SIZE - 1,
-                    movableEntity.getY() + Sprite.SCALED_SIZE - 1);
-
-            if ( (objectRange_from.x <= x && x <= objectRange_to.x)
-                    && (objectRange_from.y <= y && y <= objectRange_to.y) ) {
-                return movableEntity;
-            }
-        }
-
-        for (Bomber player : players) {
-            if (player.equals(except_movableEntity)) continue;
-
-            Point objectRange_from = new Point(player.getX(), player.getY());
-            Point objectRange_to = new Point(player.getX() + Sprite.SCALED_SIZE - 1,
-                    player.getY() + Sprite.SCALED_SIZE - 1);
-
-            if ( (objectRange_from.x <= x && x <= objectRange_to.x)
-                    && (objectRange_from.y <= y && y <= objectRange_to.y) ) {
-                return player;
-            }
-        }
-
+        me = identifyObjectAt(x, y, players);
+        if (me != except_movableEntity) return me;
         return null;
+    }
+
+    public static List<Bomber> getPlayers() {
+        return List.copyOf(players);
     }
 
     private static Bomber getPlayer(int ID) {
@@ -192,27 +151,28 @@ public class GameMap {
         return result;
     }
 
-    public static void setPlayer(int number, Scene scene) throws NullPointerException {
+    public static List<Point> getPlayerPositionsUnit() {
+        List<Point> result = new ArrayList<>();
+
+        for (Bomber player : players) {
+            Point cell = getMostStandingCell(player.getX(), player.getY());
+            result.add(cell);
+        }
+
+        return result;
+    }
+
+    public static void setPlayer(int players_number, Scene scene) throws NullPointerException {
         players.get(0).setOnPlayerEvents(scene, 1);
 
-        if (number == 2) {
-            Bomber player2 = new Bomber(generateRandomID(), 29, 11, initial_player_speed
-            );
+        if (players_number == 2) {
+            Bomber player2 = new Bomber(generateRandomID(), 29, 11, PLAYER_SPEED);
 
             //based on space and size of the map
             players.add(player2);
             player2.setOnPlayerEvents(scene, 2);
         }
-    }
-
-    //not used, may be removed
-    public static boolean removeMovableEntityAt(int x, int y) {
-        MovableEntity e = getMovableEntityAt(null, x, y);
-        if (e != null) {
-            if (e instanceof Bomber) return players.remove(e);
-            else return bots.remove(e);
-        }
-        return false;
+        else players.get(0).setOnPlayerEvents(scene, 2);
     }
 
 
@@ -222,22 +182,7 @@ public class GameMap {
     }
 
     public static Item getItemAt(int x, int y) {
-        for (Item item : items) {
-            Point item_from = new Point(item.getX(), item.getY());
-            Point item_to = new Point(item.getX() + Sprite.SCALED_SIZE - 1,
-                    item.getY() + Sprite.SCALED_SIZE - 1);
-
-            if ( (item_from.x <= x && x <= item_to.x)
-                    && (item_from.y <= y && y <= item_to.y) ) {
-                return item;
-            }
-        }
-
-        return null;
-    }
-
-    public static boolean removeItemAt(int x, int y) {
-        return items.remove(getItemAt(x, y));
+        return identifyObjectAt(x, y, items);
     }
 
     public static boolean removeItem(Item item) {
@@ -251,17 +196,7 @@ public class GameMap {
     }
 
     public static Bomb getBombAt(int x, int y) {
-        for (Bomb bomb : bombs) {
-            Point objectRange_from = new Point(bomb.getX(), bomb.getY());
-            Point objectRange_to = new Point(bomb.getX() + Sprite.SCALED_SIZE - 1,
-                    bomb.getY() + Sprite.SCALED_SIZE - 1);
-
-            if ( (objectRange_from.x <= x && x <= objectRange_to.x)
-                    && (objectRange_from.y <= y && y <= objectRange_to.y) ) {
-                return bomb;
-            }
-        }
-        return null;
+        return identifyObjectAt(x, y, bombs);
     }
 
     /**
@@ -324,9 +259,9 @@ public class GameMap {
     /**
      * Initial entities from text map.
      */
-    public static void create(String level) {
+    private void create(int level) {
         try {
-            FileInputStream in = new FileInputStream("res/levels/" + level + ".txt");
+            FileInputStream in = new FileInputStream("res/levels/level" + level + ".txt");
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
             String line = reader.readLine();
             if (line != null) {
@@ -352,26 +287,54 @@ public class GameMap {
                         case 's' -> items.add(new PowerUpSpeed(i, j));
                         case 'f' -> items.add(new PowerUpFlames(i, j));
 
-                        case 'p' -> players.add(new Bomber(generateRandomID(), i, j, initial_player_speed));
-                        case '1' -> bots.add(new Balloon(i, j, initial_enemy_speed));
-                        case '2' -> bots.add(new OneAl(i, j, initial_enemy_speed, oneal_approach_range));
+                        case 'p' -> players.add(new Bomber(generateRandomID(), i, j, PLAYER_SPEED));
+                        case '1' -> bots.add(new Balloon(i, j, ENEMY_SPEED));
+                        case '2' -> bots.add(new OneAl(i, j, ENEMY_SPEED, ONEAL_PURSUIT_RANGE));
                     }
+
+                    // remove all characters except walls, bricks and portals.
+                    if (baseMap[j][i] != '#'
+                        && baseMap[j][i] != '*'
+                        && baseMap[j][i] != 'x') baseMap[j][i] = ' ';
                 }
             }
             for (char[] chars : baseMap) System.out.println(chars);
-        } catch (IOException e) {
-            e.printStackTrace();
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    public static void clearMap() {
+    /**
+     * This method is used for bots to identify obstacles, helps find a path.
+     * @return
+     */
+    public static char[][] getBaseMap() {
+        char[][] result = new char[baseMap.length][baseMap[0].length];
+
+        for (int y = 0; y < result.length; y++) {
+            for (int x = 0; x < result[y].length; x++) {
+                result[y][x] = baseMap[y][x];
+            }
+        }
+
+        for (Bomb bomb : bombs) {
+            Point p = getMostStandingCell(bomb.getX(), bomb.getY());
+            result[p.y][p.x] = '0';
+        }
+        
+        for (MovableEntity bot : bots) {
+            Point p = getMostStandingCell(bot.getX(), bot.getY());
+            result[p.y][p.x] = '0';
+        }
+        
+        return result;
+    }
+
+    public void clearMap() {
         for (char[] chars : baseMap) {
             chars = null;
         }
         players.clear();
-        System.out.println(players.size());
         bots.clear();
         killed_enemy_list.clear();
         items.clear();
@@ -380,8 +343,8 @@ public class GameMap {
         breakableStillObjects.clear();
         bombs.clear();
     }
-    //used in the method render() of main class.
-    public static void render(GraphicsContext graphicsContext) {
+
+    public void render(GraphicsContext graphicsContext) {
         backGroundObjects.forEach(v -> v.render(graphicsContext));
         walls.forEach(v -> v.render(graphicsContext));
         items.forEach(v -> v.render(graphicsContext));
@@ -391,8 +354,14 @@ public class GameMap {
         players.forEach(v -> v.render(graphicsContext));
     }
 
-    //3 entity updating methods below are used in the method update() of main class.
-    public static void updateStillObjects() {
+    public void updateEntities(Scene scene) {
+        updateStillObjects();
+        updateMovableEntities();
+        updatePlayers(scene);
+        updateBombs();
+    }
+
+    private void updateStillObjects() {
         BreakableStillObject object = null;
         int index = 0;
 
@@ -411,7 +380,7 @@ public class GameMap {
         }
     }
 
-    public static void updateMovableEntities() {
+    private void updateMovableEntities() {
         MovableEntity entity = null;
         int index = 0;
 
@@ -430,7 +399,7 @@ public class GameMap {
         }
     }
 
-    public static void updatePlayers(Scene scene) {
+    private void updatePlayers(Scene scene) {
         Bomber player = null;
         int index = 0;
 
@@ -450,7 +419,7 @@ public class GameMap {
         }
     }
 
-    public static void updateBombs() throws NullPointerException {
+    private void updateBombs() throws NullPointerException {
         Bomb bomb = null;
         int index = 0;
 
@@ -475,8 +444,8 @@ public class GameMap {
         }
     }
 
-    public static List<MovableEntity> getKilledEnemies() {
-        return new ArrayList<>(killed_enemy_list);
+    public List<MovableEntity> getKilledEnemies() {
+        return List.copyOf(killed_enemy_list);
     }
 
 
@@ -670,6 +639,48 @@ public class GameMap {
         }
 
         return distances;
+    }
+
+    public static Point getMostStandingCell(int x, int y) {
+        int xUnit = x / Sprite.SCALED_SIZE;
+        int yUnit = y / Sprite.SCALED_SIZE;
+
+        int odd_x = x - xUnit * Sprite.SCALED_SIZE;
+        int odd_y = y - yUnit * Sprite.SCALED_SIZE;
+
+        double area_1 = getRectArea(odd_x, Sprite.SCALED_SIZE - odd_y);
+        double area_2 = getRectArea(Sprite.SCALED_SIZE - odd_x, Sprite.SCALED_SIZE - odd_y);
+        double area_3 = getRectArea(Sprite.SCALED_SIZE - odd_x, odd_y);
+        double area_4 = getRectArea(odd_x, odd_y);
+        double areaMax = Math.max(Math.max(area_1, area_2), Math.max(area_3, area_4));
+
+        if (areaMax == area_1) xUnit += 1;
+        if (areaMax == area_3) yUnit += 1;
+        if (areaMax == area_4) {
+            xUnit += 1;
+            yUnit += 1;
+        }
+
+        return new Point(xUnit, yUnit);
+    }
+
+
+    private static double getRectArea(double a, double b) {
+        return a * b;
+    }
+
+    private static <T extends Entity> T identifyObjectAt(int x, int y, List<T> entityList) {
+        for (T entity : entityList) {
+            Point objectRange_from = new Point(entity.getX(), entity.getY());
+            Point objectRange_to = new Point(entity.getX() + Sprite.SCALED_SIZE - 1,
+                    entity.getY() + Sprite.SCALED_SIZE - 1);
+
+            if ( (objectRange_from.x <= x && x <= objectRange_to.x)
+                    && (objectRange_from.y <= y && y <= objectRange_to.y) ) {
+                return entity;
+            }
+        }
+        return null;
     }
 
     /**

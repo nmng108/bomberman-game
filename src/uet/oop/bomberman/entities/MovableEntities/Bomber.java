@@ -49,7 +49,7 @@ public class Bomber extends MovableEntity {
 
     private void setDirection(int direction) {
 //        this.direction = direction;
-        movement.setDirection(direction);
+        ((PlayerMovement) movement).setDirection(direction);
 
         if (movement.getDirection() != Movement.FREEZE) {
             this.prev_direction = direction;
@@ -59,25 +59,9 @@ public class Bomber extends MovableEntity {
     public void placeBomb() {
         if (remaining_bombs == 0) return;
 
-        int xUnit = this.x / Sprite.SCALED_SIZE;
-        int yUnit = this.y / Sprite.SCALED_SIZE;
-
-        int odd_x = this.x - xUnit * Sprite.SCALED_SIZE;
-        int odd_y = this.y - yUnit * Sprite.SCALED_SIZE;
-
-        double area_1 = getRectArea(odd_x, Sprite.SCALED_SIZE - odd_y);
-        double area_2 = getRectArea(Sprite.SCALED_SIZE - odd_x, Sprite.SCALED_SIZE - odd_y);
-        double area_3 = getRectArea(Sprite.SCALED_SIZE - odd_x, odd_y);
-        double area_4 = getRectArea(odd_x, odd_y);
-        double areaMax = Math.max(Math.max(area_1, area_2), Math.max(area_3, area_4));
-
-        if (areaMax == area_1) xUnit += 1;
-
-        if (areaMax == area_3) yUnit += 1;
-        if (areaMax == area_4) {
-            xUnit += 1;
-            yUnit += 1;
-        }
+        Point cellUnit = GameMap.getMostStandingCell(this.x, this.y);
+        int xUnit = cellUnit.x;
+        int yUnit = cellUnit.y;
 
         try {
             //if existed a bomb, player don't have ability to place bomb.
@@ -230,14 +214,18 @@ public class Bomber extends MovableEntity {
 
     }
 
-    public void setOnPlayerEvents(Scene scene, int player_ordinal_number) {
-        if (player_ordinal_number == 1) {
+    /**
+     * There are 2 keys set to choose, which labeled 1 and 2.
+     * @param scene
+     * @param keys_set
+     */
+    public void setOnPlayerEvents(Scene scene, int keys_set) {
+        if (keys_set == 1) {
             scene.addEventHandler(KeyEvent.KEY_PRESSED, set1_a);
             scene.addEventHandler(KeyEvent.KEY_RELEASED, set1_b);
-//            scene.addEventHandler(KeyEvent.KEY_RELEASED, set1_b);
         }
 
-        if (player_ordinal_number == 2) {
+        if (keys_set == 2) {
             scene.addEventHandler(KeyEvent.KEY_PRESSED,set2_a);
             scene.addEventHandler(KeyEvent.KEY_RELEASED,set2_b);
 

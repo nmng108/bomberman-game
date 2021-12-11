@@ -19,6 +19,11 @@
          </font>
       </Button>
       <ChoiceBox fx:id="choiceBox" layoutX="446.0" layoutY="250.0" prefHeight="26.0" prefWidth="103.0" />
-      <Label layoutX="354.0" layoutY="263.0" text="Số người chơi: " />
+      <Label layoutX="356.0" layoutY="255.0" text="Số người chơi: " />
+      <Label layoutX="345.0" layoutY="81.0" text="BOMBERMAN" textFill="#9174a8">
+         <font>
+            <Font name="Segoe Script Bold" size="40.0" />
+         </font>
+      </Label>
    </children>
 </AnchorPane>
