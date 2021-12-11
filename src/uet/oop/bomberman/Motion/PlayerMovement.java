@@ -19,6 +19,11 @@ public class PlayerMovement extends Movement {
         this.pixels_foreach_unitOfMoveLength = 1;
     }
 
+    public void setCoordinates(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
     public void addPlacedBomb(Bomb justPlacedBomb) {
         if (justPlacedBomb != null) {
             this.bombs_standing_on.add(justPlacedBomb);

@@ -8,7 +8,7 @@ public abstract class BreakableStillObject extends Entity {
     protected boolean broken = false;
     protected boolean deleted = false;
 
-    protected final double TIME_FOREACH_IMAGE = 0.6;
+    protected final double TIME_FOREACH_IMAGE = 0.3;
     protected double break_start_time;
 
     public BreakableStillObject(int xUnit, int yUnit, Image img) {

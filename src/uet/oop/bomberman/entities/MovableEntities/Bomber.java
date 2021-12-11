@@ -2,6 +2,7 @@ package uet.oop.bomberman.entities.MovableEntities;
 
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import uet.oop.bomberman.*;
 import uet.oop.bomberman.Base.GameMap;
@@ -11,6 +12,7 @@ import uet.oop.bomberman.Motion.Movement;
 import uet.oop.bomberman.Motion.PlayerMovement;
 import uet.oop.bomberman.entities.Entity;
 import uet.oop.bomberman.entities.Item.Item;
+import uet.oop.bomberman.entities.StillEntities.Portal;
 import uet.oop.bomberman.graphics.ImageLists;
 import uet.oop.bomberman.graphics.Sprite;
 
@@ -25,26 +27,48 @@ public class Bomber extends MovableEntity {
 
     private int explosion_range = 1;
     private int remaining_bombs = 2;
+    private int flash_turns = 0;
 
-    public Bomber(final int ID, int xUnit, int yUnit, int initialSpeedByPixel) {
-        super( xUnit, yUnit, Sprite.player_up.getFxImage());
+    private boolean teleported = false;
+
+    private Portal portal_standing_on = null;
+
+    public Bomber(int ordinal_number, final int ID, int xUnit, int yUnit, int initialSpeedByPixel) {
+        super( xUnit, yUnit, Sprite.player1_up.getFxImage());
 
         this.ID = ID;
 
         movement = new PlayerMovement(this, x, y, initialSpeedByPixel);
 
         imageListArray = new List[4];
-        deadState_images = ImageLists.playerDeadImages;
-
-        imageListArray[Movement.DOWN] = ImageLists.playerMovingDownImages;
-        imageListArray[Movement.UP] = ImageLists.playerMovingUpImages;
-        imageListArray[Movement.LEFT] = ImageLists.playerMovingLeftImages;
-        imageListArray[Movement.RIGHT] = ImageLists.playerMovingRightImages;
+        switch (ordinal_number) {
+            case 1 -> {
+                deadState_images = ImageLists.player1DeadImages;
+                imageListArray[Movement.DOWN] = ImageLists.player1MovingDownImages;
+                imageListArray[Movement.UP] = ImageLists.player1MovingUpImages;
+                imageListArray[Movement.LEFT] = ImageLists.player1MovingLeftImages;
+                imageListArray[Movement.RIGHT] = ImageLists.player1MovingRightImages;
+            }
+            case 2 -> {
+                deadState_images = ImageLists.player2DeadImages;
+                imageListArray[Movement.DOWN] = ImageLists.player2MovingDownImages;
+                imageListArray[Movement.UP] = ImageLists.player2MovingUpImages;
+                imageListArray[Movement.LEFT] = ImageLists.player2MovingLeftImages;
+                imageListArray[Movement.RIGHT] = ImageLists.player2MovingRightImages;
+            }
+        }
     }
 
+    public void setPosition(int x, int y) {
+        ((PlayerMovement) movement).setCoordinates(x, y);
+    }
 
     public int getID() {
         return this.ID;
+    }
+
+    public boolean hasTeleported() {
+        return teleported;
     }
 
     private void setDirection(int direction) {
@@ -98,6 +122,82 @@ public class Bomber extends MovableEntity {
         movement.speedUp(50);
     }
 
+    public void receiveFlashItem() {
+        flash_turns += 1;
+    }
+
+    private void useFlashItem() {
+        if (flash_turns <= 0) return;
+        flash_turns -= 1;
+
+        flash(2);
+    }
+
+    private void flash(int number_of_cells) {
+        int direction;
+        if (movement.getDirection() == Movement.FREEZE) direction = prev_direction;
+        else direction = movement.getDirection();
+
+        switch (direction) {
+            case Movement.LEFT -> {
+                if (x - 2 * Sprite.SCALED_SIZE < 0) return;
+                if (cannotFlashInto(x - number_of_cells * Sprite.SCALED_SIZE, y)){
+                    int d = (int) GameMap.distanceToObjectAhead(this);
+                    ((PlayerMovement) movement).setCoordinates(x - d, y);
+                    return;
+                }
+
+                ((PlayerMovement) movement).setCoordinates(x - number_of_cells * Sprite.SCALED_SIZE, y);
+            }
+
+            case Movement.DOWN -> {
+                if (y + 2 * Sprite.SCALED_SIZE >= BombermanGame.HEIGHT * Sprite.SCALED_SIZE) return;
+                if (cannotFlashInto(x, y + 2 * Sprite.SCALED_SIZE)) {
+                    int d = (int) GameMap.distanceToObjectAhead(this);
+                    ((PlayerMovement) movement).setCoordinates(x, y + d);
+                    return;
+                }
+
+                ((PlayerMovement) movement).setCoordinates(x, y + number_of_cells * Sprite.SCALED_SIZE);
+            }
+
+            case Movement.UP -> {
+                if (y - 2 * Sprite.SCALED_SIZE < 0) return;
+                if (cannotFlashInto(x, y - 2 * Sprite.SCALED_SIZE)) {
+                    int d = (int) GameMap.distanceToObjectAhead(this);
+                    ((PlayerMovement) movement).setCoordinates(x, y - d);
+                    return;
+                }
+
+                ((PlayerMovement) movement).setCoordinates(x, y - number_of_cells * Sprite.SCALED_SIZE);
+            }
+
+            case Movement.RIGHT -> {
+                if (x + 2 * Sprite.SCALED_SIZE >= BombermanGame.WIDTH * Sprite.SCALED_SIZE) return;
+                if (cannotFlashInto(x + 2 * Sprite.SCALED_SIZE, y)) {
+                    int d = (int) GameMap.distanceToObjectAhead(this);
+                    ((PlayerMovement) movement).setCoordinates(x + d, y);
+                    return;
+                }
+
+                ((PlayerMovement) movement).setCoordinates(x + number_of_cells * Sprite.SCALED_SIZE, y);
+            }
+        }
+    }
+
+    private boolean cannotFlashInto(int x, int y) {
+        for (int i = y; i < y + Sprite.SCALED_SIZE - 1; i++) {
+            for (int j = x; j < x + Sprite.SCALED_SIZE - 1; j++) {
+                Entity obj = GameMap.getObjectAt(null, j, i);
+                if (obj != null) {
+                    return !(obj instanceof Item);
+                }
+            }
+        }
+
+        return false;
+    }
+
     public void detectAndPickUpItem() {
         for (Entity object : movement.getSteppedOverObjects(this)) {
             if (object instanceof Item) {
@@ -106,46 +206,46 @@ public class Bomber extends MovableEntity {
         }
     }
 
+    public void teleportTo(Portal portal) {
+        try {
+            if (portal == null) throw new Exception("Portal not found");
+
+            this.x = portal.getX();
+            this.y = portal.getY();
+            ((PlayerMovement) movement).setCoordinates(this.x, this.y);
+
+            this.teleported = true;
+            this.portal_standing_on = portal;
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void scanPort() {
+        if (this.portal_standing_on == null) return;
+
+        Point bomber_from = new Point(this.x, this.y);
+        Point bomber_to = new Point(this.x + Sprite.SCALED_SIZE - 1, this.y + Sprite.SCALED_SIZE - 1);
+
+        for (int i = bomber_from.y; i < bomber_to.y; i++) {
+            for (int j = bomber_from.x; j < bomber_to.x; j++) {
+                if (GameMap.getOpenPortalAt(j, i) == this.portal_standing_on) return;
+            }
+        }
+
+        this.teleported = false;
+        this.portal_standing_on = null;
+    }
+
     @Override
     protected void move() {
-        Point tmp = movement.run();
         try {
-//            if (x == tmp.x && y == tmp.y && movement.getDirection() != Movement.FREEZE) {
-//                switch (movement.getDirection()) {
-//                    case Movement.RIGHT -> {
-//                        if (GameMap.getObjectAt(x + Sprite.SCALED_SIZE, y) != null)
-//                            System.out.println(GameMap.getObjectAt(x + Sprite.SCALED_SIZE, y).toString());
-//                        else if (GameMap.getObjectAt(x + Sprite.SCALED_SIZE,
-//                                y + Sprite.SCALED_SIZE) != null)
-//                            System.out.println(GameMap.getObjectAt(x + Sprite.SCALED_SIZE,
-//                                    y + Sprite.SCALED_SIZE).toString());
-//                    }
-//                    case Movement.LEFT -> {
-//                        if (GameMap.getObjectAt(x - 1, y) != null)
-//                            System.out.println(GameMap.getObjectAt(x - 1, y).toString());
-//                        else if (GameMap.getObjectAt(x - 1, y + Sprite.SCALED_SIZE) != null)
-//                            System.out.println(GameMap.getObjectAt(x - 1, y + Sprite.SCALED_SIZE).toString());
-//                    }
-//                    case Movement.UP -> {
-//                        if (GameMap.getObjectAt(x, y - 1) != null)
-//                           System.out.println(GameMap.getObjectAt(x, y - 1).toString());
-//                        else if (GameMap.getObjectAt(x + Sprite.SCALED_SIZE, y - 1) != null)
-//                            System.out.println(GameMap.getObjectAt(x + Sprite.SCALED_SIZE, y - 1).toString());
-//                    }
-//                    case Movement.DOWN -> {
-//                        if (GameMap.getObjectAt(x, y + Sprite.SCALED_SIZE) != null)
-//                            System.out.println(GameMap.getObjectAt(x, y + Sprite.SCALED_SIZE).toString());
-//                        else if (GameMap.getObjectAt(x + Sprite.SCALED_SIZE,
-//                                y + Sprite.SCALED_SIZE) != null)
-//                            System.out.println(GameMap.getObjectAt(x + Sprite.SCALED_SIZE,
-//                                y + Sprite.SCALED_SIZE).toString());
-//                    }
-//                }
-//            }
-            x = tmp.x;
-            y = tmp.y;
+            Point pos = movement.run();
+            x = pos.x;
+            y = pos.y;
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
 //        System.out.println(movement.getSpeed());
     }
@@ -169,6 +269,7 @@ public class Bomber extends MovableEntity {
             move();
 
             detectAndPickUpItem();
+            scanPort();
 
             for (Entity entity : movement.getObjectsAhead()) {
                 if (entity instanceof Balloon || entity instanceof OneAl) {
@@ -223,11 +324,17 @@ public class Bomber extends MovableEntity {
         if (keys_set == 1) {
             scene.addEventHandler(KeyEvent.KEY_PRESSED, set1_a);
             scene.addEventHandler(KeyEvent.KEY_RELEASED, set1_b);
+            scene.addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
+                if (keyEvent.getCode().equals(KeyCode.BRACERIGHT)) useFlashItem();
+            });
         }
 
         if (keys_set == 2) {
             scene.addEventHandler(KeyEvent.KEY_PRESSED,set2_a);
             scene.addEventHandler(KeyEvent.KEY_RELEASED,set2_b);
+            scene.addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
+                if (keyEvent.getCode().equals(KeyCode.E)) useFlashItem();
+            });
 
             prev_direction = Movement.LEFT;
         }

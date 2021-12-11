@@ -13,10 +13,7 @@ import uet.oop.bomberman.Menu;
 import uet.oop.bomberman.Motion.Movement;
 import uet.oop.bomberman.entities.*;
 import uet.oop.bomberman.entities.Bomb.Bomb;
-import uet.oop.bomberman.entities.Item.Item;
-import uet.oop.bomberman.entities.Item.PowerUpBombs;
-import uet.oop.bomberman.entities.Item.PowerUpFlames;
-import uet.oop.bomberman.entities.Item.PowerUpSpeed;
+import uet.oop.bomberman.entities.Item.*;
 import uet.oop.bomberman.entities.MovableEntities.Balloon;
 import uet.oop.bomberman.entities.MovableEntities.Bomber;
 import uet.oop.bomberman.entities.MovableEntities.MovableEntity;
@@ -27,7 +24,7 @@ import uet.oop.bomberman.entities.StillEntities.StableStillObject.Wall;
 import uet.oop.bomberman.graphics.Sprite;
 
 public class GameMap {
-    private static final int PLAYER_SPEED = 60;
+    private final int PLAYER_SPEED;
     private final int ENEMY_SPEED;
     private final int ONEAL_PURSUIT_RANGE;
 
@@ -36,22 +33,23 @@ public class GameMap {
 
     private static List<Bomber> players = new ArrayList<>();
     private static List<MovableEntity> bots = new ArrayList<>();
-    private static List<MovableEntity> killed_enemy_list = new ArrayList<>();
+    private static List<MovableEntity>[] killed_enemy_list;
     private static List<Item> items = new ArrayList<>();
     private static List<Entity> backGroundObjects = new ArrayList<>();
     private static List<Entity> walls = new ArrayList<>();
+    private static List<Portal> openPortals = new ArrayList<>();
     private static List<BreakableStillObject> breakableStillObjects = new ArrayList<>();
     private static List<Bomb> bombs = new ArrayList<>();
 
 
     public GameMap(int level, Scene scene) {
-        //        PLAYER_SPEED = 50 + 3 * level;
+        PLAYER_SPEED = 50 + 3 * level;
         ENEMY_SPEED = 45 + 5 * level;
         ONEAL_PURSUIT_RANGE = 6 + level;
 
         clearMap();
         create(level);
-        setPlayer(Menu.getPlayersNumber(), scene);
+        setPlayer(Menu.getPlayersNumber(), scene, PLAYER_SPEED);
     }
 
 
@@ -63,8 +61,16 @@ public class GameMap {
         return walls;
     }
 
-    public static void addBackGroundObject(Entity entity) {
-        backGroundObjects.add(entity);
+    public static void addOpenPortal(Portal portal) {
+        openPortals.add(portal);
+    }
+
+    public static List<Portal> getOpenPortals() {
+        return openPortals;
+    }
+
+    public static Portal getOpenPortalAt(int x, int y) {
+        return identifyObjectAt(x, y, openPortals);
     }
 
     public static List<BreakableStillObject> getBreakableStillObjects() {
@@ -131,7 +137,7 @@ public class GameMap {
     }
 
     public static List<Bomber> getPlayers() {
-        return List.copyOf(players);
+        return players;
     }
 
     private static Bomber getPlayer(int ID) {
@@ -162,21 +168,32 @@ public class GameMap {
         return result;
     }
 
-    public static void setPlayer(int players_number, Scene scene) throws NullPointerException {
+    public static void setPlayer(int players_number, Scene scene, final int PLAYER_SPEED) throws NullPointerException {
         players.get(0).setOnPlayerEvents(scene, 1);
 
         if (players_number == 2) {
-            Bomber player2 = new Bomber(generateRandomID(), 29, 11, PLAYER_SPEED);
-
-            //based on space and size of the map
+            Bomber player2 = new Bomber(2, generateRandomID(), 29, 11, PLAYER_SPEED);
             players.add(player2);
             player2.setOnPlayerEvents(scene, 2);
+
+            killed_enemy_list = new ArrayList[2];
+            killed_enemy_list[0] = new ArrayList<>();
+            killed_enemy_list[1] = new ArrayList<>();
         }
-        else players.get(0).setOnPlayerEvents(scene, 2);
+        else {
+            players.get(0).setOnPlayerEvents(scene, 2);
+
+            killed_enemy_list = new ArrayList[1];
+            killed_enemy_list[0] = new ArrayList<>();
+        }
     }
 
 
     /**  Item  */
+    public static void addItem(Item item) {
+        items.add(item);
+    }
+
     public static List<Item> getItems() {
         return items;
     }
@@ -286,13 +303,14 @@ public class GameMap {
                         case 'b' -> items.add(new PowerUpBombs(i, j));
                         case 's' -> items.add(new PowerUpSpeed(i, j));
                         case 'f' -> items.add(new PowerUpFlames(i, j));
+                        case 'w' -> items.add(new PowerUpWallPass(i, j));
 
-                        case 'p' -> players.add(new Bomber(generateRandomID(), i, j, PLAYER_SPEED));
+                        case 'p' -> players.add(new Bomber(1, generateRandomID(), i, j, PLAYER_SPEED));
                         case '1' -> bots.add(new Balloon(i, j, ENEMY_SPEED));
                         case '2' -> bots.add(new OneAl(i, j, ENEMY_SPEED, ONEAL_PURSUIT_RANGE));
                     }
 
-                    // remove all characters except walls, bricks and portals.
+                    // remove all characters except walls, bricks and openPortals.
                     if (baseMap[j][i] != '#'
                         && baseMap[j][i] != '*'
                         && baseMap[j][i] != 'x') baseMap[j][i] = ' ';
@@ -336,7 +354,6 @@ public class GameMap {
         }
         players.clear();
         bots.clear();
-        killed_enemy_list.clear();
         items.clear();
         backGroundObjects.clear();
         walls.clear();
@@ -347,6 +364,7 @@ public class GameMap {
     public void render(GraphicsContext graphicsContext) {
         backGroundObjects.forEach(v -> v.render(graphicsContext));
         walls.forEach(v -> v.render(graphicsContext));
+        openPortals.forEach(v -> v.render(graphicsContext));
         items.forEach(v -> v.render(graphicsContext));
         bombs.forEach(v -> v.render(graphicsContext));
         breakableStillObjects .forEach(v -> v.render(graphicsContext));
@@ -359,24 +377,22 @@ public class GameMap {
         updateMovableEntities();
         updatePlayers(scene);
         updateBombs();
+        updatePortal();
     }
 
     private void updateStillObjects() {
         BreakableStillObject object = null;
         int index = 0;
 
-        while(index < GameMap.getBreakableStillObjects().size()) {
-            for (; index < GameMap.getBreakableStillObjects().size(); index++) {
-                object = GameMap.getBreakableStillObjects().get(index);
+        for (; index < GameMap.getBreakableStillObjects().size(); index++) {
+            object = GameMap.getBreakableStillObjects().get(index);
 
-                if (object.isBroken()) object.update();
+            object.update();
 
-                if (object.isDeleted()) {
-                    break;
-                }
+            if (object.isDeleted()) {
+//                object.update();
+                index -= 1;
             }
-
-            if (object.isDeleted()) removeObject(object);
         }
     }
 
@@ -423,7 +439,9 @@ public class GameMap {
         Bomb bomb = null;
         int index = 0;
 
-        killed_enemy_list.clear();
+        for (List<MovableEntity> list : killed_enemy_list) {
+            list.clear();
+        }
 
         while (index < GameMap.getBombs().size()) {
             for (; index < GameMap.getBombs().size(); index++) {
@@ -436,21 +454,28 @@ public class GameMap {
 
             if (bomb.isDone()) {
                 if (bombs.remove(bomb)) {
-                    killed_enemy_list.addAll(bomb.getKilledEnemies());
                     Bomber owner = GameMap.getPlayer(bomb.getOwnerID());
-                    if (owner != null) owner.takeBackOneBomb();
+                    if (owner != null) {
+                        owner.takeBackOneBomb();
+                        int i = players.indexOf(owner);
+                        killed_enemy_list[i].addAll(bomb.getKilledEnemies());
+                    }
                 }
             }
         }
     }
 
-    public List<MovableEntity> getKilledEnemies() {
-        return List.copyOf(killed_enemy_list);
+    private void updatePortal() {
+        openPortals.forEach(Portal::update);
+    }
+
+    public List<MovableEntity>[] getKilledEnemies() throws Exception {
+        return killed_enemy_list;
     }
 
 
     /**
-     * Find the distance to the nearest still object found ahead.
+     * Find the distance to the nearest still object found ahead (except items).
      * Only available for horizontal or vertical motion.
      * @return the positive value based on horizontal or vertical direction.
      *      This value is equal to
@@ -458,24 +483,28 @@ public class GameMap {
      *          +, 0 (minimum) if touching a still object from the beginning while moving LEFT or UP.
      *          +, 32 if touching a still object from the beginning while moving RIGHT or DOWN.
      */
-    public static double distanceToStillObjectAhead(MovableEntity entity) throws NullPointerException {
+    public static double distanceToObjectAhead(MovableEntity entity) throws NullPointerException {
         Point from = new Point(entity.getX(), entity.getY());
 
-        switch (entity.getDirection()) {
+        int direction;
+        if (entity.getDirection() == Movement.FREEZE) direction = entity.getPrev_direction();
+        else direction = entity.getDirection();
+
+        switch (direction) {
             case Movement.RIGHT -> {
                 Entity obj;
 
-                for (int _i_xUnit = entity.getX() / Sprite.SCALED_SIZE + 1; ; _i_xUnit++) {
+                for (int i_x = entity.getX() + 1; ; i_x++) {
                     //left-top angle of the object
-                    obj = getStillObjectAt(_i_xUnit * Sprite.SCALED_SIZE, from.y);
+                    obj = getStillObjectAt(i_x, from.y);
                     if (obj != null) {
-                        return _i_xUnit * Sprite.SCALED_SIZE - (entity.getX() + Sprite.SCALED_SIZE);
+                        return i_x - (entity.getX() + Sprite.SCALED_SIZE);
                     }
 
                     //left-bottom angle of the object
-                    obj = getStillObjectAt(_i_xUnit * Sprite.SCALED_SIZE, from.y + Sprite.SCALED_SIZE - 1);
+                    obj = getStillObjectAt(i_x, from.y + Sprite.SCALED_SIZE - 1);
                     if (obj != null) {
-                        return _i_xUnit * Sprite.SCALED_SIZE - (entity.getX() + Sprite.SCALED_SIZE);
+                        return i_x - (entity.getX() + Sprite.SCALED_SIZE);
                     }
                 }
             }
@@ -483,17 +512,17 @@ public class GameMap {
             case Movement.LEFT -> {
                 Entity obj;
 
-                for (int _i_xUnit = entity.getX() / Sprite.SCALED_SIZE; ; _i_xUnit--) {
+                for (int i_x = entity.getX(); ; i_x--) {
                     //left-top angle of the object
-                    obj = getStillObjectAt(_i_xUnit * Sprite.SCALED_SIZE, from.y);
+                    obj = getStillObjectAt(i_x, from.y);
                     if (obj != null) {
-                        return entity.getX() - (_i_xUnit + 1) * Sprite.SCALED_SIZE;
+                        return entity.getX() - i_x;
                     }
 
                     //left-bottom angle of the object
-                    obj = getStillObjectAt(_i_xUnit * Sprite.SCALED_SIZE, from.y + Sprite.SCALED_SIZE - 1);
+                    obj = getStillObjectAt(i_x, from.y + Sprite.SCALED_SIZE - 1);
                     if (obj != null) {
-                        return entity.getX() - (_i_xUnit + 1) * Sprite.SCALED_SIZE;
+                        return entity.getX() - i_x;
                     }
                 }
             }
@@ -501,18 +530,17 @@ public class GameMap {
             case Movement.DOWN -> {
                 Entity obj;
 
-                for (int _i_yUnit = entity.getY() / Sprite.SCALED_SIZE + 1; ; _i_yUnit++) {
+                for (int i_y = entity.getY() + 1; ; i_y++) {
                     //left-top angle of the object
-                    obj = getStillObjectAt(entity.getX(), _i_yUnit * Sprite.SCALED_SIZE);
+                    obj = getStillObjectAt(entity.getX(), i_y);
                     if (obj != null) {
-                        return _i_yUnit * Sprite.SCALED_SIZE - (entity.getY() + Sprite.SCALED_SIZE);
+                        return i_y - (entity.getY() + Sprite.SCALED_SIZE);
                     }
 
                     //right-top angle of the object
-                    obj = getStillObjectAt(entity.getX() + Sprite.SCALED_SIZE - 1,
-                            _i_yUnit * Sprite.SCALED_SIZE);
+                    obj = getStillObjectAt(entity.getX() + Sprite.SCALED_SIZE - 1, i_y);
                     if (obj != null) {
-                        return _i_yUnit * Sprite.SCALED_SIZE - (entity.getY() + Sprite.SCALED_SIZE);
+                        return i_y - (entity.getY() + Sprite.SCALED_SIZE);
                     }
                 }
             }
@@ -520,18 +548,18 @@ public class GameMap {
             case Movement.UP -> {
                 Entity obj;
 
-                for (int _i_yUnit = entity.getY() / Sprite.SCALED_SIZE ; ; _i_yUnit--) {
+                for (int i_y = entity.getY(); ; i_y--) {
                     //left-top angle of the object
-                    obj = getStillObjectAt(entity.getX(), _i_yUnit * Sprite.SCALED_SIZE);
+                    obj = getStillObjectAt(entity.getX(), i_y);
                     if (obj != null) {
-                        return entity.getY() - (_i_yUnit + 1) * Sprite.SCALED_SIZE;
+                        return entity.getY() - i_y;
                     }
 
                     //right-top angle of the object
                     obj = getStillObjectAt(entity.getX() + Sprite.SCALED_SIZE - 1,
-                            _i_yUnit * Sprite.SCALED_SIZE);
+                            i_y);
                     if (obj != null) {
-                        return entity.getY() - (_i_yUnit + 1) * Sprite.SCALED_SIZE;
+                        return entity.getY() - i_y;
                     }
                 }
             }
@@ -626,19 +654,6 @@ public class GameMap {
         }
 
         return minDistance;
-    }
-
-    public static double[] distanceToPlayers(Point e) throws NullPointerException {
-        double[] distances = new double[players.size()];
-
-        for (int i = 0; i < players.size() ; i++) {
-            double x_difference = Math.abs(e.x - players.get(i).getX());
-            double y_difference = Math.abs(e.y - players.get(i).getY());
-
-            distances[i] = Math.sqrt(Math.pow(x_difference, 2) + Math.pow(y_difference, 2));
-        }
-
-        return distances;
     }
 
     public static Point getMostStandingCell(int x, int y) {

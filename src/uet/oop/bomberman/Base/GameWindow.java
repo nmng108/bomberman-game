@@ -16,7 +16,7 @@ public class GameWindow {
     public static final int INFORMATION_AREA_HEIGHT = 120;
     private final int MAX_LEVEL = 3;
     private final double DISPLAY_NOTIFICATION_TIME = 2;
-    private final double TIME_FOREACH_LEVEL = 15;
+    private final double TIME_FOREACH_LEVEL = 60;
 
     private int level = 1;
     private int players_number;
@@ -52,8 +52,7 @@ public class GameWindow {
         try {
             gameMap.updateEntities(scene);
 
-            // ??? Player 2' scores is added also ???
-            scoreManagement.add(player_ID_list.get(0), gameMap.getKilledEnemies());
+            scoreManagement.add(gameMap.getKilledEnemies());
 
             if (!isWaiting && passLevel()) {
                 level += 1;
@@ -91,8 +90,8 @@ public class GameWindow {
             displayTimer(graphicsContext);
 
             graphicsContext.setFill(Color.GOLDENROD);
-            graphicsContext.setFont(new Font("Bookman Old Style", 25));
-            graphicsContext.fillText("Màn " + level, 460, 435, 50);
+            graphicsContext.setFont(new Font("Bookman Old Style", 26));
+            graphicsContext.fillText("Màn " + level, 460, 439, 50);
 
             if (playersWin() && isWaiting) {
                 graphicsContext.setFill(Color.GREEN);

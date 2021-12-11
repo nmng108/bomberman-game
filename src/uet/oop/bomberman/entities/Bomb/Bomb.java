@@ -150,7 +150,7 @@ public class Bomb extends Entity {
             this.img = Sprite.movingImage(ImageLists.bombImages.get(0),
                     ImageLists.bombImages.get(1),
                     ImageLists.bombImages.get(2),
-                    (int) BombermanGame.getTime(), TIME_FOREACH_IMAGE);
+                    BombermanGame.getTime(), TIME_FOREACH_IMAGE);
         }
 
     }

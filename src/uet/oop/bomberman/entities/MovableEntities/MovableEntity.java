@@ -46,6 +46,10 @@ public abstract class MovableEntity extends Entity {
         return movement.getDirection();
     }
 
+    public int getPrev_direction() {
+        return prev_direction;
+    }
+
     protected void countdownUntilRemoved(final double TIME_DEAD_STATE) {
         //timer
         double current_time = BombermanGame.getTime();

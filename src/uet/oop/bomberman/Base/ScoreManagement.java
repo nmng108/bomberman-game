@@ -28,20 +28,12 @@ public class ScoreManagement {
         }
     }
 
-//    public int getScore() {
-//        return scores_array;
-//    }
-
-//    public void add(int scores_array) {
-//        this.scores_array += scores_array;
-//    }
-
-    public void add(int player_ID,  List<MovableEntity> killedEnemies) {
-        int index = player_ID_list.indexOf(player_ID);
-
-        for (Entity enemy : killedEnemies) {
-            if (enemy instanceof Balloon) scores_array.get(index).current += ScoreManagement.BALLOON; //still got error
-            else if (enemy instanceof OneAl) scores_array.get(index).current += ScoreManagement.ONEAL;
+    public void add(List<MovableEntity>[] killedEnemies) {
+        for (int i = 0; i < player_ID_list.size(); i++) {
+            for (Entity enemy : killedEnemies[i]) {
+                if (enemy instanceof Balloon) scores_array.get(i).current += ScoreManagement.BALLOON;
+                if (enemy instanceof OneAl) scores_array.get(i).current += ScoreManagement.ONEAL;
+            }
         }
     }
 
@@ -56,7 +48,7 @@ public class ScoreManagement {
 
         if (scores_array.size() == 2) {
             gc.setFill(Color.BLUEVIOLET);
-            gc.fillText("Điểm người chơi 2: " + scores_array.get(0).current, 750, 485, 200);
+            gc.fillText("Điểm người chơi 2: " + scores_array.get(1).current, 750, 485, 200);
         }
     }
 
@@ -72,13 +64,6 @@ public class ScoreManagement {
 
     public List<Score> getScores_array() {
         return scores_array;
-    }
-
-    public void printScore(Label label) {
-        if (scores_array.get(0).isDifferentFromPrevScore()) {
-            label.setText("");
-            label.setText("Điểm: " + scores_array.get(0).current);
-        }
     }
 
     private class Score {

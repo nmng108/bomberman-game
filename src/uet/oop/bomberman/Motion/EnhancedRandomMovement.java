@@ -92,7 +92,7 @@ public class EnhancedRandomMovement extends Movement {
                 findPath();
                 findInRange();
 
-                if (paths == null || paths.length == 0) throw new Exception("Set direction failed");
+                if (paths == null || paths.length == 0) return;
 
                 //when all players just went out of range.
                 if (targetIsRandom && targetIsInRange) {

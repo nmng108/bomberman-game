@@ -6,35 +6,67 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ImageLists {
-    public static List<Image> playerMovingUpImages = new ArrayList<>() {{
-        add(Sprite.player_up.getFxImage());
-        add(Sprite.player_up_1.getFxImage());
-        add(Sprite.player_up_2.getFxImage());
+    public static List<Image> player1MovingUpImages = new ArrayList<>() {{
+        add(Sprite.player1_up.getFxImage());
+        add(Sprite.player1_up_1.getFxImage());
+        add(Sprite.player1_up_2.getFxImage());
     }};
 
-    public static List<Image> playerMovingDownImages = new ArrayList<>() {{
-        add(Sprite.player_down.getFxImage());
-        add(Sprite.player_down_1.getFxImage());
-        add(Sprite.player_down_2.getFxImage());
+    public static List<Image> player1MovingDownImages = new ArrayList<>() {{
+        add(Sprite.player1_down.getFxImage());
+        add(Sprite.player1_down_1.getFxImage());
+        add(Sprite.player1_down_2.getFxImage());
     }};
 
-    public static List<Image> playerMovingLeftImages = new ArrayList<>() {{
-        add(Sprite.player_left.getFxImage());
-        add(Sprite.player_left_1.getFxImage());
-        add(Sprite.player_left_2.getFxImage());
+    public static List<Image> player1MovingLeftImages = new ArrayList<>() {{
+        add(Sprite.player1_left.getFxImage());
+        add(Sprite.player1_left_1.getFxImage());
+        add(Sprite.player1_left_2.getFxImage());
     }};
 
-    public static List<Image> playerMovingRightImages = new ArrayList<>() {{
-        add(Sprite.player_right.getFxImage());
-        add(Sprite.player_right_1.getFxImage());
-        add(Sprite.player_right_2.getFxImage());
+    public static List<Image> player1MovingRightImages = new ArrayList<>() {{
+        add(Sprite.player1_right.getFxImage());
+        add(Sprite.player1_right_1.getFxImage());
+        add(Sprite.player1_right_2.getFxImage());
     }};
 
-    public static List<Image> playerDeadImages = new ArrayList<>() {{
-        add(Sprite.player_dead1.getFxImage());
-        add(Sprite.player_dead2.getFxImage());
-        add(Sprite.player_dead3.getFxImage());
+    public static List<Image> player1DeadImages = new ArrayList<>() {{
+        add(Sprite.player1_dead1.getFxImage());
+        add(Sprite.player1_dead2.getFxImage());
+        add(Sprite.player1_dead3.getFxImage());
     }};
+
+
+    public static List<Image> player2MovingUpImages = new ArrayList<>() {{
+        add(Sprite.player2_up.getFxImage());
+        add(Sprite.player2_up_1.getFxImage());
+        add(Sprite.player2_up_2.getFxImage());
+    }};
+
+    public static List<Image> player2MovingDownImages = new ArrayList<>() {{
+        add(Sprite.player2_down.getFxImage());
+        add(Sprite.player2_down_1.getFxImage());
+        add(Sprite.player2_down_2.getFxImage());
+    }};
+
+    public static List<Image> player2MovingLeftImages = new ArrayList<>() {{
+        add(Sprite.player2_left.getFxImage());
+        add(Sprite.player2_left_1.getFxImage());
+        add(Sprite.player2_left_2.getFxImage());
+    }};
+
+    public static List<Image> player2MovingRightImages = new ArrayList<>() {{
+        add(Sprite.player2_right.getFxImage());
+        add(Sprite.player2_right_1.getFxImage());
+        add(Sprite.player2_right_2.getFxImage());
+    }};
+
+    public static List<Image> player2DeadImages = new ArrayList<>() {{
+        add(Sprite.player2_dead1.getFxImage());
+        add(Sprite.player2_dead2.getFxImage());
+        add(Sprite.player2_dead3.getFxImage());
+    }};
+
 
     public static List<Image> balloonLeftImages = new ArrayList<>() {{
         add(Sprite.balloom_left1.getFxImage());

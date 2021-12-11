@@ -50,6 +50,14 @@ public abstract class Movement {
         this.calc_period = BombermanGame.getTime();
     }
 
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
     public int getDirection() {
         return this.direction;
     }
@@ -153,7 +161,7 @@ public abstract class Movement {
 
     //not used
     protected void moveCLoserToObject() { //need to supplement distance_to_movableObject
-        distance_to_stillObject_ahead = GameMap.distanceToStillObjectAhead(this.entity);
+        distance_to_stillObject_ahead = GameMap.distanceToObjectAhead(this.entity);
 
         if (distance_to_stillObject_ahead >= this.pixels_foreach_unitOfMoveLength) return;
 
@@ -190,7 +198,7 @@ public abstract class Movement {
             }
 
             //if 1(or more) still object is standing in movement range_unit:
-            distance_to_stillObject_ahead = GameMap.distanceToStillObjectAhead(this.entity);
+            distance_to_stillObject_ahead = GameMap.distanceToObjectAhead(this.entity);
 
             if ((direction == LEFT || direction == UP)
                     && (distance_to_stillObject_ahead >= 0

@@ -160,48 +160,48 @@ public class PathFinding {
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        Point source = new Point(1, 1);
-        Point target = new Point(5, 3);
-
-        String baseMap = "###############################\n" +
-                         "#   b  ** *  1 * 2 *  * * *   #\n" +
-                         "#     #*# #  *#*# # # #*#*#*# #\n" +
-                         "#  x* s   *    *      * 2 * * #\n" +
-                         "#   #   # #*# # #*#*# # # # #*#\n" +
-                         "#f    s    x **  *  *   1     #\n" +
-                         "# # # # # # # # # #*# #*# # # #\n" +
-                         "#*  *  1 b *  *      *        #\n" +
-                         "# # # # #*# # # #*#*# # # # # #\n" +
-                         "#*    **  *       *     1     #\n" +
-                         "# #*# # # # # # #*# # # # # # #\n" +
-                         "#    f      *   *  *          #\n" +
-                         "###############################";
-        String[] b = baseMap.split("\n");
-
-        char[][] map = new char[13][31];
-        for (int y = 0; y < map.length; y++) {
-            map[y] = b[y].toCharArray();
-        }
-
-        for (int y = 0; y < map.length; y++) {
-            for (int x = 0; x < map[0].length; x++) {
-                System.out.print(map[y][x]);
-            }
-            System.out.println();
-        }
-
-        PathFinding p = new PathFinding(source.x, source.y, target.x, target.y, map);
-
-        for (Point point : p.positionList) {
-            map[point.y][point.x] = '.';
-        }
-
-        for (int y = 0; y < map.length; y++) {
-            for (int x = 0; x < map[y].length; x++) {
-                System.out.print(map[y][x]);
-            }
-            System.out.println();
-        }
-    }
+//    public static void main(String[] args) throws Exception {
+//        Point source = new Point(1, 1);
+//        Point target = new Point(5, 3);
+//
+//        String baseMap = "###############################\n" +
+//                         "#   b  ** *  1 * 2 *  * * *   #\n" +
+//                         "#     #*# #  *#*# # # #*#*#*# #\n" +
+//                         "#  x* s   *    *      * 2 * * #\n" +
+//                         "#   #   # #*# # #*#*# # # # #*#\n" +
+//                         "#f    s    x **  *  *   1     #\n" +
+//                         "# # # # # # # # # #*# #*# # # #\n" +
+//                         "#*  *  1 b *  *      *        #\n" +
+//                         "# # # # #*# # # #*#*# # # # # #\n" +
+//                         "#*    **  *       *     1     #\n" +
+//                         "# #*# # # # # # #*# # # # # # #\n" +
+//                         "#    f      *   *  *          #\n" +
+//                         "###############################";
+//        String[] b = baseMap.split("\n");
+//
+//        char[][] map = new char[13][31];
+//        for (int y = 0; y < map.length; y++) {
+//            map[y] = b[y].toCharArray();
+//        }
+//
+//        for (int y = 0; y < map.length; y++) {
+//            for (int x = 0; x < map[0].length; x++) {
+//                System.out.print(map[y][x]);
+//            }
+//            System.out.println();
+//        }
+//
+//        PathFinding p = new PathFinding(source.x, source.y, target.x, target.y, map);
+//
+//        for (Point point : p.positionList) {
+//            map[point.y][point.x] = '.';
+//        }
+//
+//        for (int y = 0; y < map.length; y++) {
+//            for (int x = 0; x < map[y].length; x++) {
+//                System.out.print(map[y][x]);
+//            }
+//            System.out.println();
+//        }
+//    }
 }
