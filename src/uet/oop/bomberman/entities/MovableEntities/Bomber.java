@@ -7,6 +7,7 @@ import javafx.scene.input.KeyEvent;
 import uet.oop.bomberman.*;
 import uet.oop.bomberman.Base.GameMap;
 import uet.oop.bomberman.Base.Point;
+import uet.oop.bomberman.Base.Sound;
 import uet.oop.bomberman.entities.Bomb.Bomb;
 import uet.oop.bomberman.Motion.Movement;
 import uet.oop.bomberman.Motion.PlayerMovement;
@@ -16,6 +17,9 @@ import uet.oop.bomberman.entities.StillEntities.Portal;
 import uet.oop.bomberman.graphics.ImageLists;
 import uet.oop.bomberman.graphics.Sprite;
 
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -32,6 +36,13 @@ public class Bomber extends MovableEntity {
     private boolean teleported = false;
 
     private Portal portal_standing_on = null;
+
+    public Sound footsteps_sound;
+    private SoundManagement soundManagement = new SoundManagement();
+
+    private boolean playingFlashSound = false;
+    private boolean playingPickUpSound = false;
+
 
     public Bomber(int ordinal_number, final int ID, int xUnit, int yUnit, int initialSpeedByPixel) {
         super( xUnit, yUnit, Sprite.player1_up.getFxImage());
@@ -57,10 +68,6 @@ public class Bomber extends MovableEntity {
                 imageListArray[Movement.RIGHT] = ImageLists.player2MovingRightImages;
             }
         }
-    }
-
-    public void setPosition(int x, int y) {
-        ((PlayerMovement) movement).setCoordinates(x, y);
     }
 
     public int getID() {
@@ -129,6 +136,7 @@ public class Bomber extends MovableEntity {
     private void useFlashItem() {
         if (flash_turns <= 0) return;
         flash_turns -= 1;
+        playingFlashSound = true;
 
         flash(2);
     }
@@ -202,6 +210,7 @@ public class Bomber extends MovableEntity {
         for (Entity object : movement.getSteppedOverObjects(this)) {
             if (object instanceof Item) {
                 ((Item) object).buff(this);
+                this.playingPickUpSound = true;
             }
         }
     }
@@ -247,12 +256,12 @@ public class Bomber extends MovableEntity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-//        System.out.println(movement.getSpeed());
     }
 
     @Override
     public void update() {
         imageUpdate();
+        soundManagement.update();
 
         if (deleted) {
             movement = null;
@@ -420,19 +429,58 @@ public class Bomber extends MovableEntity {
         }
     };
 
-//    @Override
-//    protected void countdownUntilRemoved() {
-//        double current_time = BombermanGame.getTime();
-//        double dying_time = current_time - this.dead_startTime;
-//        //if TIMER reach to maximum value and turn back to 0:
-//        if (dying_time < 0) dying_time = BombermanGame.TIME_COUNT_MAX - this.dead_startTime + current_time;
-//
-//        if (dead && dying_time >= TIME_FOREACH_IMAGE * 3.1) {
-//            this.dead = true;
-//        }
-//    }
 
-    private double getRectArea(double a, double b) {
-        return a * b;
+    private class SoundManagement {
+        boolean playingFootstepsSound = false;
+        boolean playingPlayerDieSound = false;
+
+        public void update () {
+            try {
+                playerSound();
+                itemSound();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        private void playerSound() throws UnsupportedAudioFileException, LineUnavailableException, IOException {
+            if (dead && !deleted) {
+                if (!playingPlayerDieSound) {
+                    new Sound("PlayerDie", false).play();
+                    playingPlayerDieSound = true;
+                }
+                if (playingFootstepsSound) {
+                    if (footsteps_sound != null) {
+                        footsteps_sound.stop();
+                    }
+                    playingFootstepsSound = false;
+                }
+            }
+            else if (!dead) {
+                if (!playingFootstepsSound && movement.getDirection() != Movement.FREEZE) {
+                    this.playingFootstepsSound = true;
+                    // Open sound
+                    footsteps_sound = new Sound("Footsteps", true);
+                    footsteps_sound.play();
+                }
+                else if (playingFootstepsSound && movement.getDirection() == Movement.FREEZE) {
+                    this.playingFootstepsSound = false;
+                    // Pause sound
+                    if (footsteps_sound == null) return;
+                    footsteps_sound.pause();
+                }
+            }
+        }
+
+        private void itemSound() throws UnsupportedAudioFileException, LineUnavailableException, IOException {
+            if (playingFlashSound) {
+                playingFlashSound = false;
+                new Sound("Flash", false).play();
+            }
+            if (playingPickUpSound) {
+                playingPickUpSound = false;
+                new Sound("Pickup", false).play();
+            }
+        }
     }
 }

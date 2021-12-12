@@ -2,6 +2,7 @@ package uet.oop.bomberman.entities.Bomb;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+import uet.oop.bomberman.Base.Sound;
 import uet.oop.bomberman.BombermanGame;
 import uet.oop.bomberman.Base.GameMap;
 import uet.oop.bomberman.entities.Entity;
@@ -11,6 +12,9 @@ import uet.oop.bomberman.entities.MovableEntities.MovableEntity;
 import uet.oop.bomberman.graphics.ImageLists;
 import uet.oop.bomberman.graphics.Sprite;
 
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,7 +82,11 @@ public class Bomb extends Entity {
 
         if (timeOver && !done) {
             if (!exploded) {
-                explode();
+                try {
+                    explode();
+                } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
+                    e.printStackTrace();
+                }
                 this.flame_start_time = BombermanGame.getTime();
             }
 
@@ -169,14 +177,19 @@ public class Bomb extends Entity {
 
             this.flame_start_time = BombermanGame.getTime();
 
-            explode();
+            try {
+                explode();
+            } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    private void explode() {
+    private void explode() throws UnsupportedAudioFileException, LineUnavailableException, IOException {
         burn();
         throwFlame();
         exploded = true;
+        new Sound("Bomb", false).play();
     }
 
     private void throwFlame() {

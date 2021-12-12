@@ -48,7 +48,7 @@ public class Balloon extends MovableEntity {
 
         if (!dead) {
             dead_startTime = BombermanGame.getTime();
-//            move();
+            move();
             // may change handling balloon's collision with bomber to move transparently in the future.
             movement.getObjectsAhead().forEach(obj -> {
                 if (obj instanceof Bomber) {

@@ -8,6 +8,7 @@ import javafx.scene.text.Font;
 import uet.oop.bomberman.BombermanGame;
 import uet.oop.bomberman.Menu;
 import uet.oop.bomberman.entities.Bomb.Bomb;
+import uet.oop.bomberman.entities.MovableEntities.Bomber;
 import uet.oop.bomberman.graphics.Sprite;
 
 import java.util.List;
@@ -16,15 +17,15 @@ public class GameWindow {
     public static final int INFORMATION_AREA_HEIGHT = 120;
     private final int MAX_LEVEL = 3;
     private final double DISPLAY_NOTIFICATION_TIME = 2;
-    private final double TIME_FOREACH_LEVEL = 60;
+    private final double TIME_FOREACH_LEVEL = 20;
 
     private int level = 1;
-    private int players_number;
     private double notif_start_time = 0;
     private double start_game_time;
     private double remaining_time;
 
     private boolean isWaiting = true;
+    private boolean isPlayingSound = false;
 
     List<Integer> player_ID_list;
     ScoreManagement scoreManagement;
@@ -36,7 +37,6 @@ public class GameWindow {
         try {
             gameMap = new GameMap(1, scene);
 
-            players_number = Menu.getPlayersNumber();
             player_ID_list = GameMap.getPlayerIDs();
 
             scoreManagement = new ScoreManagement(player_ID_list);
@@ -68,7 +68,7 @@ public class GameWindow {
                 notif_start_time = BombermanGame.getTime();
             }
             else if (BombermanGame.getTime() - notif_start_time >= DISPLAY_NOTIFICATION_TIME) {
-                    isWaiting = false;
+                isWaiting = false;
             }
         }
         catch (Exception e) {
@@ -121,7 +121,17 @@ public class GameWindow {
         if (this.remaining_time <= 0) return;
 
         graphicsContext.setFill(Color.BEIGE);
-        if (this.remaining_time <= 10) graphicsContext.setFill(Color.PALEVIOLETRED);
+        if (this.remaining_time <= 10) {
+            graphicsContext.setFill(Color.PALEVIOLETRED);
+            // Play sound concurrently with time displaying.
+            try {
+                if (this.remaining_time >= 0 && this.remaining_time % 1 <= 0.009) {
+                    new Sound("Countdown", false).play();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         graphicsContext.setFont(new Font("Arial", 17));
         graphicsContext.fillText("Thời gian còn lại: "
@@ -133,11 +143,31 @@ public class GameWindow {
     }
 
     public boolean playersLose() {
-        return GameMap.getPlayers().size() == 0 || this.remaining_time <= 0;
+        if (GameMap.getPlayers().size() == 0 || this.remaining_time <= 0) {
+            try {
+                for (Bomber player : GameMap.getPlayers()) {
+                    if (player != null) player.footsteps_sound.stop();
+                }
+
+                if (!isPlayingSound){
+                    new Sound("Negative_tone", false).play();
+                    isPlayingSound = true;
+                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+            return true;
+        }
+        return false;
     }
 
     public boolean playersWin() {
-        return this.level > MAX_LEVEL;
+        if (this.level > MAX_LEVEL) {
+
+            return true;
+        }
+        return false;
     }
 
     public boolean passLevel() {
