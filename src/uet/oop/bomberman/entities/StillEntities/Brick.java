@@ -3,10 +3,7 @@ package uet.oop.bomberman.entities.StillEntities;
 import javafx.scene.image.Image;
 import uet.oop.bomberman.Base.GameMap;
 import uet.oop.bomberman.BombermanGame;
-import uet.oop.bomberman.entities.Item.PowerUpBombs;
-import uet.oop.bomberman.entities.Item.PowerUpFlames;
-import uet.oop.bomberman.entities.Item.PowerUpSpeed;
-import uet.oop.bomberman.entities.Item.PowerUpWallPass;
+import uet.oop.bomberman.entities.Item.*;
 import uet.oop.bomberman.graphics.Sprite;
 
 import java.util.ArrayList;
@@ -95,6 +92,7 @@ public class Brick extends BreakableStillObject {
                 case 1 -> GameMap.addItem(new PowerUpBombs(xUnit, yUnit));
                 case 2 -> GameMap.addItem(new PowerUpFlames(xUnit, yUnit));
                 case 3 -> GameMap.addItem(new PowerUpWallPass(xUnit, yUnit));
+                case 4 -> GameMap.addItem(new Detonator(xUnit, yUnit));
             }
         }
     }

@@ -49,7 +49,7 @@ public class GameMap {
         ONEAL_PURSUIT_RANGE = 6 + level;
         players_number = Menu.getPlayersNumber();
 
-        clearMap();
+        clearMap(scene);
         create(level);
         setPlayer(scene);
     }
@@ -302,6 +302,8 @@ public class GameMap {
                         case 's' -> items.add(new PowerUpSpeed(i, j));
                         case 'f' -> items.add(new PowerUpFlames(i, j));
                         case 'w' -> items.add(new PowerUpWallPass(i, j));
+                        case 'd' -> items.add(new Detonator(i, j));
+                        case 'F' -> items.add(new PowerUpFlamePass(i, j));
 
                         case 'p' -> players.add(new Bomber(1, i, j, PLAYER_SPEED));
                         case 'q' -> players.add(new Bomber(2, i, j, PLAYER_SPEED));
@@ -347,17 +349,22 @@ public class GameMap {
         return result;
     }
 
-    public void clearMap() {
+    public void clearMap(Scene scene) {
         for (char[] chars : baseMap) {
             chars = null;
         }
-        players.clear();
+        for (int i = 0; i < players.size(); i++) {
+            players.get(i).removeHandler(scene);
+            players.remove(players.get(i));
+            i -= 1;
+        }
         bots.clear();
         items.clear();
         backGroundObjects.clear();
         walls.clear();
         breakableStillObjects.clear();
         bombs.clear();
+        openPortals.clear();
     }
 
     public void render(GraphicsContext graphicsContext) {

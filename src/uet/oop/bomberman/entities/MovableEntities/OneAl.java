@@ -2,7 +2,7 @@ package uet.oop.bomberman.entities.MovableEntities;
 
 import uet.oop.bomberman.Base.Point;
 import uet.oop.bomberman.BombermanGame;
-import uet.oop.bomberman.Motion.EnhancedRandomMovement;
+import uet.oop.bomberman.Motion.PlayerPursuitMovement;
 import uet.oop.bomberman.Motion.Movement;
 import uet.oop.bomberman.graphics.ImageLists;
 import uet.oop.bomberman.graphics.Sprite;
@@ -14,7 +14,7 @@ public class OneAl extends MovableEntity {
     public OneAl(int xUnit, int yUnit, int initialSpeedByPixel, int minRange_approach) {
         super(xUnit, yUnit, Sprite.oneal_right1.getFxImage());
 
-        movement = new EnhancedRandomMovement(this, this.x, this.y, initialSpeedByPixel, minRange_approach);
+        movement = new PlayerPursuitMovement(this, this.x, this.y, initialSpeedByPixel, minRange_approach);
 
         imageListArray = new List[4];
         imageListArray[Movement.LEFT] = ImageLists.oneAlLeftImages;

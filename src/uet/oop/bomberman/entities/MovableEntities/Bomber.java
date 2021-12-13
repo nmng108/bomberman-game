@@ -28,11 +28,16 @@ import java.util.List;
 public class Bomber extends MovableEntity {
     private final int ID; // also means ordinal number => only assign 1 or 2 to this variable
 
-    private int explosion_range = 1;
+    private int explosion_range = 2;
     private int remaining_bombs = 2;
     private int flash_turns = 0;
+    private int detonators = 0;
+
+    private final double FLAMEPASS_TIME = 9;
+    private double start_flamepass_time;
 
     private boolean teleported = false;
+    private boolean hasFlamePassAbility = false;
 
     private Portal portal_standing_on = null;
 
@@ -98,7 +103,7 @@ public class Bomber extends MovableEntity {
                 return;
             }
 
-            Bomb addedBomb = new Bomb(xUnit, yUnit, Sprite.bomb.getFxImage(), this.ID, explosion_range);
+            Bomb addedBomb = new Bomb(xUnit, yUnit, Sprite.bomb.getFxImage(), this.ID, explosion_range, hasFlamePassAbility);
 
             GameMap.addBomb(addedBomb);
             ((PlayerMovement) movement).addPlacedBomb(addedBomb);
@@ -115,18 +120,30 @@ public class Bomber extends MovableEntity {
     }
 
 
+    /**
+     * Handle power up bomb item.
+     */
     public void increaseBombCapacity() {
         remaining_bombs += 1;
     }
 
+    /**
+     * Handle power up flame item.
+     */
     public void increaseExplosionRange() {
         explosion_range += 1;
     }
 
+    /**
+     * Handle power up speed item.
+     */
     public void increaseSpeed() {
         movement.speedUp(20);
     }
 
+    /**
+     * Handle flash item.
+     */
     public void receiveFlashItem() {
         flash_turns += 1;
     }
@@ -204,6 +221,44 @@ public class Bomber extends MovableEntity {
         return false;
     }
 
+    /**
+     * Handle detonator item.
+     */
+    public void receiveDetonator() {
+        detonators += 1;
+    }
+
+    private void useDetonator() {
+        if (detonators == 0) return;
+        boolean hasPlacedBomb = false;
+
+        for (Bomb bomb : GameMap.getBombs()) {
+            if (bomb.getOwnerID() == this.ID) {
+                bomb.setTimeOver(true);
+                hasPlacedBomb = true;
+            }
+        }
+
+        if (hasPlacedBomb) detonators -= 1;
+    }
+
+    /**
+     * Handle power up wall pass bomb item.
+     */
+    public void setFlamePassAbility(boolean b) {
+        this.hasFlamePassAbility = b;
+        if (b) start_flamepass_time = BombermanGame.getTime();
+    }
+
+    private void updateFlamePassAbility() {
+        if (hasFlamePassAbility) {
+            double remaining_time = FLAMEPASS_TIME - (BombermanGame.getTime() - start_flamepass_time);
+            if (remaining_time <= 0) {
+                hasFlamePassAbility = false;
+            }
+        }
+    }
+
     public void detectAndPickUpItem() {
         for (Entity object : movement.getSteppedOverItems(this)) {
             if (object instanceof Item) {
@@ -271,6 +326,7 @@ public class Bomber extends MovableEntity {
 
             move();
 
+            updateFlamePassAbility();
             detectAndPickUpItem();
             scanPortal();
 
@@ -370,6 +426,7 @@ public class Bomber extends MovableEntity {
                 case UP -> setDirection(Movement.UP);
                 case DOWN -> setDirection(Movement.DOWN);
                 case ENTER -> placeBomb();
+                case BRACELEFT -> useDetonator();
                 case BRACERIGHT -> useFlashItem();
             }
         }
@@ -403,7 +460,8 @@ public class Bomber extends MovableEntity {
                 case W -> setDirection(Movement.UP);
                 case S -> setDirection(Movement.DOWN);
                 case SPACE -> placeBomb();
-                case E -> useFlashItem();
+                case E -> useDetonator();
+                case R -> useFlashItem();
             }
         }
     };

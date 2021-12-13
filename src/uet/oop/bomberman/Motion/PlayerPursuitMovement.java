@@ -9,7 +9,7 @@ import uet.oop.bomberman.graphics.Sprite;
 import java.util.ArrayList;
 import java.util.Random;
 
-public class EnhancedRandomMovement extends Movement {
+public class PlayerPursuitMovement extends Movement {
     private int remaining_steps = 0;
     private int target_index = new Random().nextInt(2);
 
@@ -24,8 +24,8 @@ public class EnhancedRandomMovement extends Movement {
     private PathFinding[] paths;
     private int min_path;
 
-    public EnhancedRandomMovement(MovableEntity entity, int x, int y, int initialSpeedByPixel,
-                                  int range_to_pursue) {
+    public PlayerPursuitMovement(MovableEntity entity, int x, int y, int initialSpeedByPixel,
+                                 int range_to_pursue) {
         super(entity, x, y, initialSpeedByPixel);
         this.start_time_with_newSpeed = BombermanGame.getTime();
         this.RANGE_TO_PURSUE = range_to_pursue;

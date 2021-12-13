@@ -26,21 +26,28 @@ public abstract class FlameLine extends Entity {
     protected double start_time = 0;
 
     protected boolean done = false;
+    protected boolean wallPass = false;
 
     protected List<Image> flame_images;
     protected List<Image> last_flame_images;
 
-    public FlameLine(int xOrigin, int yOrigin, int rangeUnit) {
+    public FlameLine(int xOrigin, int yOrigin, int rangeUnit, boolean canPassWalls) {
         super(0, 0, null);
         this.x = xOrigin;
         this.y = yOrigin;
 
         this.range_unit = rangeUnit;
         this.start_time = BombermanGame.getTime();
+
+        this.wallPass = canPassWalls;
     }
 
     public boolean isDone() {
         return this.done;
+    }
+
+    public void setWallPass(boolean b) {
+        this.wallPass = b;
     }
 
     public List<MovableEntity> getKilledEnemies() {

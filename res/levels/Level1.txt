@@ -1,10 +1,10 @@
 1 13 31
 ###############################
-#   b  ** *    *   *  * * *   #
+#b  d  ** *    *   *  * * *   #
 #w  p #*# #  *#*# # # #*#*#*# #
-#  x* s   *           * 2 * * #
-#   # 1 # #*# #*#*#*# # # # #*#
-#f  w s    x **s *  *         #
+#  x* s  d*           * 2 * * #
+#F  # 1 # #*# #*#*#*# # # # #*#
+#f  w s    x **d *  *         #
 # # # # # # # # # #*# #*# # # #
 #*  *    b *  *s     *        #
 # # 1 # #*# # # #*#*# # # # # #
@@ -27,7 +27,7 @@ Tiles:
 x - Portal
 
 Character:
-p - Bomber
+p, q - Bomber
 1 - Balloon
 2 - Oneal
 
@@ -35,6 +35,8 @@ Items:
 b - Bomb Item
 f - Flame Item
 s - Speed Item
-w - Flash Item
+w - Flash Item(power up wall pass Item)
+d - Detonator Item
+F - Flame Pass Item
 
 Kí tự khác các kí tự trên - Grass

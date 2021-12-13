@@ -33,6 +33,7 @@ public class Bomb extends Entity {
     private boolean done = false;
     private boolean timeOver = false;
     private boolean exploded = false; //used internally in this class
+    private boolean flamePassAbility = false;
 
     private int owner_ID;
 
@@ -43,11 +44,12 @@ public class Bomb extends Entity {
 
     List<MovableEntity> killed_enemy_list = new ArrayList<>();
 
-    public Bomb(int xUnit, int yUnit, Image img, int owner_ID, int range_unit) {
+    public Bomb(int xUnit, int yUnit, Image img, int owner_ID, int range_unit, boolean flamePassAbility) {
         super(xUnit, yUnit, img);
         this.owner_ID = owner_ID;
         this.range_unit = range_unit;
         this.start_time = BombermanGame.getTime();
+        this.flamePassAbility = flamePassAbility;
     }
 
     public boolean isDone() {
@@ -125,10 +127,10 @@ public class Bomb extends Entity {
     }
 
     private void showFlames(GraphicsContext gc) throws NullPointerException {
-        leftFlames.render(gc);
-        rightFlames.render(gc);
-        bottomFlames.render(gc);
-        topFlames.render(gc);
+        if (leftFlames != null) leftFlames.render(gc);
+        if (rightFlames != null) rightFlames.render(gc);
+        if (bottomFlames != null) bottomFlames.render(gc);
+        if (topFlames != null) topFlames.render(gc);
     }
 
     private void imageUpdate() {
@@ -194,10 +196,10 @@ public class Bomb extends Entity {
 
     private void throwFlame() {
         try {
-            leftFlames = new HorizontalFlameLine(x, y, Movement.LEFT, range_unit);
-            rightFlames = new HorizontalFlameLine(x, y, Movement.RIGHT, range_unit);
-            bottomFlames = new VerticalFlameLine(x, y, Movement.DOWN, range_unit);
-            topFlames = new VerticalFlameLine(x, y, Movement.UP, range_unit);
+            leftFlames = new HorizontalFlameLine(x, y, Movement.LEFT, range_unit, flamePassAbility);
+            rightFlames = new HorizontalFlameLine(x, y, Movement.RIGHT, range_unit, flamePassAbility);
+            bottomFlames = new VerticalFlameLine(x, y, Movement.DOWN, range_unit, flamePassAbility);
+            topFlames = new VerticalFlameLine(x, y, Movement.UP, range_unit, flamePassAbility);
 
             bottomFlames.update();
             killed_enemy_list.addAll(bottomFlames.getKilledEnemies());

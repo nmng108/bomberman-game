@@ -12,10 +12,10 @@ import uet.oop.bomberman.graphics.ImageLists;
 import uet.oop.bomberman.graphics.Sprite;
 
 public class VerticalFlameLine extends FlameLine {
-    public VerticalFlameLine(int xOrigin, int yOrigin, int direction, int rangeUnit)
+    public VerticalFlameLine(int xOrigin, int yOrigin, int direction, int rangeUnit, boolean canPassWalls)
             throws Exception {
 
-        super(xOrigin, yOrigin, rangeUnit);
+        super(xOrigin, yOrigin, rangeUnit, canPassWalls);
 
         if (direction != Movement.UP && direction != Movement.DOWN) {
             throw new Exception("VerticalFlameLine Construction failed");
@@ -37,7 +37,7 @@ public class VerticalFlameLine extends FlameLine {
             int i = 1;
             for (; i < range_unit; i++) {
                 //check whether there's a Wall or a Brick laying on flame line.
-                if (GameMap.containsStillObjectAt(x, y + i * Sprite.SCALED_SIZE)) {
+                if (!wallPass && GameMap.containsStillObjectAt(x, y + i * Sprite.SCALED_SIZE)) {
 
                     Entity entity = GameMap.getStillObjectAt(x, y + i * Sprite.SCALED_SIZE);
 
@@ -52,7 +52,7 @@ public class VerticalFlameLine extends FlameLine {
             int i = 1;
             for (; i < range_unit; i++) {
                 //check whether there's a Wall or a Brick laying on flame line.
-                if (GameMap.containsStillObjectAt(x, y - i * Sprite.SCALED_SIZE)) {
+                if (!wallPass && GameMap.containsStillObjectAt(x, y - i * Sprite.SCALED_SIZE)) {
 
                     Entity entity = GameMap.getStillObjectAt(x, y - i * Sprite.SCALED_SIZE);
 
