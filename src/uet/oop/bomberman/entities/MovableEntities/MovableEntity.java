@@ -36,10 +36,6 @@ public abstract class MovableEntity extends Entity {
 
     public void setDead(boolean dead) {
         this.dead = dead;
-        if (this.movement != null) {
-            this.movement.removeOwner();
-//            this.movement = null;
-        }
     }
 
     public int getDirection() {

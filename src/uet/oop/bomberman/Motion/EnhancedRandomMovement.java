@@ -192,6 +192,8 @@ public class EnhancedRandomMovement extends Movement {
 
     private void findInRange() {
         try {
+            if (paths == null) return;
+
             if (paths[0].isFound() && (paths[0].getDistance() <= RANGE_TO_PURSUE)) {
                 this.target_index = 0;
                 targetIsRandom = false;

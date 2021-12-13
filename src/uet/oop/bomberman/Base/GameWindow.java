@@ -125,7 +125,7 @@ public class GameWindow {
             graphicsContext.setFill(Color.PALEVIOLETRED);
             // Play sound concurrently with time displaying.
             try {
-                if (this.remaining_time >= 0 && this.remaining_time % 1 <= 0.009) {
+                if (this.remaining_time >= 0 && this.remaining_time % 1 <= 0.018) {
                     new Sound("Countdown", false).play();
                 }
             } catch (Exception e) {
@@ -146,7 +146,7 @@ public class GameWindow {
         if (GameMap.getPlayers().size() == 0 || this.remaining_time <= 0) {
             try {
                 for (Bomber player : GameMap.getPlayers()) {
-                    if (player != null) player.footsteps_sound.stop();
+                    if (player != null && player.getFootstepsSound() != null) player.getFootstepsSound().stop();
                 }
 
                 if (!isPlayingSound){

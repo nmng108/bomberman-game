@@ -2,7 +2,6 @@ package uet.oop.bomberman.entities.MovableEntities;
 
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import uet.oop.bomberman.*;
 import uet.oop.bomberman.Base.GameMap;
@@ -27,7 +26,7 @@ import java.util.List;
  * Currently used by Player only.
  */
 public class Bomber extends MovableEntity {
-    private final int ID;
+    private final int ID; // also means ordinal number => only assign 1 or 2 to this variable
 
     private int explosion_range = 1;
     private int remaining_bombs = 2;
@@ -37,17 +36,16 @@ public class Bomber extends MovableEntity {
 
     private Portal portal_standing_on = null;
 
-    public Sound footsteps_sound;
     private SoundManagement soundManagement = new SoundManagement();
 
     private boolean playingFlashSound = false;
     private boolean playingPickUpSound = false;
 
 
-    public Bomber(int ordinal_number, final int ID, int xUnit, int yUnit, int initialSpeedByPixel) {
+    public Bomber(int ordinal_number, int xUnit, int yUnit, int initialSpeedByPixel) {
         super( xUnit, yUnit, Sprite.player1_up.getFxImage());
 
-        this.ID = ID;
+        this.ID = ordinal_number;
 
         movement = new PlayerMovement(this, x, y, initialSpeedByPixel);
 
@@ -100,9 +98,9 @@ public class Bomber extends MovableEntity {
                 return;
             }
 
-            Bomb addedBomb = GameMap.addBomb(
-                    new Bomb(xUnit, yUnit, Sprite.bomb.getFxImage(), this.ID, explosion_range));
+            Bomb addedBomb = new Bomb(xUnit, yUnit, Sprite.bomb.getFxImage(), this.ID, explosion_range);
 
+            GameMap.addBomb(addedBomb);
             ((PlayerMovement) movement).addPlacedBomb(addedBomb);
 
             remaining_bombs -= 1;
@@ -126,7 +124,7 @@ public class Bomber extends MovableEntity {
     }
 
     public void increaseSpeed() {
-        movement.speedUp(50);
+        movement.speedUp(20);
     }
 
     public void receiveFlashItem() {
@@ -207,7 +205,7 @@ public class Bomber extends MovableEntity {
     }
 
     public void detectAndPickUpItem() {
-        for (Entity object : movement.getSteppedOverObjects(this)) {
+        for (Entity object : movement.getSteppedOverItems(this)) {
             if (object instanceof Item) {
                 ((Item) object).buff(this);
                 this.playingPickUpSound = true;
@@ -231,7 +229,7 @@ public class Bomber extends MovableEntity {
         }
     }
 
-    private void scanPort() {
+    private void scanPortal() {
         if (this.portal_standing_on == null) return;
 
         Point bomber_from = new Point(this.x, this.y);
@@ -263,10 +261,6 @@ public class Bomber extends MovableEntity {
         imageUpdate();
         soundManagement.update();
 
-        if (deleted) {
-            movement = null;
-            GameMap.removeObject(this);
-        }
         if (dead && !deleted) {
             movement.stop();
 
@@ -278,7 +272,7 @@ public class Bomber extends MovableEntity {
             move();
 
             detectAndPickUpItem();
-            scanPort();
+            scanPortal();
 
             for (Entity entity : movement.getObjectsAhead()) {
                 if (entity instanceof Balloon || entity instanceof OneAl) {
@@ -327,41 +321,47 @@ public class Bomber extends MovableEntity {
     /**
      * There are 2 keys set to choose, which labeled 1 and 2.
      * @param scene
-     * @param keys_set
+     *
      */
-    public void setOnPlayerEvents(Scene scene, int keys_set) {
-        if (keys_set == 1) {
-            scene.addEventHandler(KeyEvent.KEY_PRESSED, set1_a);
-            scene.addEventHandler(KeyEvent.KEY_RELEASED, set1_b);
-            scene.addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
-                if (keyEvent.getCode().equals(KeyCode.BRACERIGHT)) useFlashItem();
-            });
+    public void setOnPlayerEvents(Scene scene) {
+        if (this.ID == 1) {
+            scene.addEventHandler(KeyEvent.KEY_PRESSED, set1_PRESS);
+            scene.addEventHandler(KeyEvent.KEY_RELEASED, set1_RELEASE);
+
+            if (GameMap.getPlayersNumber() == 1) {
+                scene.addEventHandler(KeyEvent.KEY_PRESSED, set2_PRESS);
+                scene.addEventHandler(KeyEvent.KEY_RELEASED, set2_RELEASE);
+            }
         }
 
-        if (keys_set == 2) {
-            scene.addEventHandler(KeyEvent.KEY_PRESSED,set2_a);
-            scene.addEventHandler(KeyEvent.KEY_RELEASED,set2_b);
-            scene.addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
-                if (keyEvent.getCode().equals(KeyCode.E)) useFlashItem();
-            });
+        if (this.ID == 2) {
+            scene.addEventHandler(KeyEvent.KEY_PRESSED, set2_PRESS);
+            scene.addEventHandler(KeyEvent.KEY_RELEASED, set2_RELEASE);
 
             prev_direction = Movement.LEFT;
         }
     }
 
-    public void removeHandler(Scene scene, int player_ordinal_number) {
-        if (player_ordinal_number == 1) {
-            scene.removeEventHandler(KeyEvent.KEY_PRESSED, set1_a);
-            scene.removeEventHandler(KeyEvent.KEY_RELEASED, set1_b);
+    public void removeHandler(Scene scene) {
+        if (this.ID == 1) {
+            scene.removeEventHandler(KeyEvent.KEY_PRESSED, set1_PRESS);
+            scene.removeEventHandler(KeyEvent.KEY_RELEASED, set1_RELEASE);
+
+            if (GameMap.getPlayersNumber() == 1) {
+                scene.removeEventHandler(KeyEvent.KEY_PRESSED, set2_PRESS);
+                scene.removeEventHandler(KeyEvent.KEY_RELEASED, set2_RELEASE);
+            }
+            System.out.println("Removed handler of player 1.");
         }
 
-        if (player_ordinal_number == 2) {
-            scene.removeEventHandler(KeyEvent.KEY_PRESSED,set2_a);
-            scene.removeEventHandler(KeyEvent.KEY_RELEASED,set2_b);
+        if (this.ID == 2) {
+            scene.removeEventHandler(KeyEvent.KEY_PRESSED, set2_PRESS);
+            scene.removeEventHandler(KeyEvent.KEY_RELEASED, set2_RELEASE);
+            System.out.println("Removed handler of player 2.");
         }
     }
 
-    private EventHandler<KeyEvent> set1_a = new EventHandler<KeyEvent>() {
+    private EventHandler<KeyEvent> set1_PRESS = new EventHandler<KeyEvent>() {
         @Override
         public void handle(KeyEvent keyEvent) {
             switch (keyEvent.getCode()) {
@@ -370,10 +370,11 @@ public class Bomber extends MovableEntity {
                 case UP -> setDirection(Movement.UP);
                 case DOWN -> setDirection(Movement.DOWN);
                 case ENTER -> placeBomb();
+                case BRACERIGHT -> useFlashItem();
             }
         }
     };
-    private EventHandler<KeyEvent> set1_b = new EventHandler<KeyEvent>() {
+    private EventHandler<KeyEvent> set1_RELEASE = new EventHandler<KeyEvent>() {
         @Override
         public void handle(KeyEvent keyEvent) {
             switch (keyEvent.getCode()) {
@@ -393,7 +394,7 @@ public class Bomber extends MovableEntity {
             }
         }
     };
-    private EventHandler<KeyEvent> set2_a = new EventHandler<KeyEvent>() {
+    private EventHandler<KeyEvent> set2_PRESS = new EventHandler<KeyEvent>() {
         @Override
         public void handle(KeyEvent keyEvent) {
             switch (keyEvent.getCode()) {
@@ -402,10 +403,11 @@ public class Bomber extends MovableEntity {
                 case W -> setDirection(Movement.UP);
                 case S -> setDirection(Movement.DOWN);
                 case SPACE -> placeBomb();
+                case E -> useFlashItem();
             }
         }
     };
-    private EventHandler<KeyEvent> set2_b = new EventHandler<KeyEvent>() {
+    private EventHandler<KeyEvent> set2_RELEASE = new EventHandler<KeyEvent>() {
         @Override
         public void handle(KeyEvent keyEvent) {
             switch (keyEvent.getCode()) {
@@ -429,10 +431,24 @@ public class Bomber extends MovableEntity {
         }
     };
 
+    public Sound getFootstepsSound() {
+        return soundManagement.footsteps_sound;
+    }
 
     private class SoundManagement {
-        boolean playingFootstepsSound = false;
-        boolean playingPlayerDieSound = false;
+        private Sound footsteps_sound;
+
+        private boolean playingFootstepsSound = false;
+        private boolean playingPlayerDieSound = false;
+
+        public SoundManagement() {
+            try {
+                 footsteps_sound = new Sound("Footsteps", true);
+                 footsteps_sound.pause();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         public void update () {
             try {
@@ -461,7 +477,6 @@ public class Bomber extends MovableEntity {
                     this.playingFootstepsSound = true;
                     // Open sound
                     footsteps_sound = new Sound("Footsteps", true);
-                    footsteps_sound.play();
                 }
                 else if (playingFootstepsSound && movement.getDirection() == Movement.FREEZE) {
                     this.playingFootstepsSound = false;

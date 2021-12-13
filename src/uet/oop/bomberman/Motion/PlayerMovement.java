@@ -16,7 +16,7 @@ public class PlayerMovement extends Movement {
 
     public PlayerMovement(MovableEntity entity, int x, int y, int speed) {
         super(entity, x, y, speed);
-        this.pixels_foreach_unitOfMoveLength = 1;
+        this.pixels_per_1_step = 1;
     }
 
     public void setCoordinates(int x, int y) {
@@ -50,6 +50,9 @@ public class PlayerMovement extends Movement {
 
         this.calc_period = BombermanGame.getTime();
 
+        //if stepped out of any bomb just placed, we just take care of the rest placed bombs in each move.
+        scanPlacedBombs();
+
         //handle collision
         if (isTouchingAnObjectAhead()) {
             if ( ! isBlockedCompletely() ) {
@@ -59,29 +62,28 @@ public class PlayerMovement extends Movement {
                 checkAbilityToStepOverBomb();
 
                 if (canStepOverBomb) {
+//                    //speed up in order to move out of bombs faster
+//                    if (canGetCLoserToObject(pixels_per_1_step + 0.05)) return new Point(x, y);
+//
                     switch (this.direction) {
-                        //speed up by an old value (1->1.5) in order to step over the bomb faster
-                        case RIGHT -> x += 1.5;
-                        case LEFT -> x -= 1.5;
-                        case UP -> y -= 1.5;
-                        case DOWN -> y += 1.5;
+                        case RIGHT -> x += pixels_per_1_step + 0.05;
+                        case LEFT -> x -= pixels_per_1_step + 0.05;
+                        case UP -> y -= pixels_per_1_step + 0.05;
+                        case DOWN -> y += pixels_per_1_step + 0.05;
                     }
-//                    moveCLoserToObject(); //still got mistake
                 }
             }
             return new Point(x, y);
         }
 
-        //if stepped out of any bomb just placed, we just take care of the rest placed bombs in each move.
-        scanPlacedBombs();
+        if (canGetCLoserToObject(pixels_per_1_step)) return new Point(x, y);
 
         switch (direction) {
-            case RIGHT -> x += pixels_foreach_unitOfMoveLength;
-            case LEFT -> x -= pixels_foreach_unitOfMoveLength;
-            case UP -> y -= pixels_foreach_unitOfMoveLength;
-            case DOWN -> y += pixels_foreach_unitOfMoveLength;
+            case RIGHT -> x += pixels_per_1_step;
+            case LEFT -> x -= pixels_per_1_step;
+            case UP -> y -= pixels_per_1_step;
+            case DOWN -> y += pixels_per_1_step;
         }
-//        moveCLoserToObject(); //still got mistake
 
         return new Point(x, y);
     }

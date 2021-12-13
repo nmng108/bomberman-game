@@ -27,6 +27,7 @@ public class Portal extends BreakableStillObject {
                     if (player.hasTeleported()) return;
 
                     int portal_index = GameMap.getOpenPortals().indexOf(this);
+
                     Portal other_portal;
                     if (portal_index == 1) other_portal = GameMap.getOpenPortals().get(0);
                     else other_portal = GameMap.getOpenPortals().get(1);
