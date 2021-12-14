@@ -280,6 +280,115 @@ public abstract class Movement {
         return true;
     }
 
+    /**
+     * @return false when the corresponding edge's odd of this object,
+     * which is out of the blocking object's edge,
+     * is larger than SCALED_SIZE / 2.
+     */
+    protected boolean isBlockedCompletely(int direction) {
+        if ( ! isTouchingAnObjectAhead()) return false;
+
+        switch (direction) {
+            case RIGHT -> {
+                int odd_y = this.y % Sprite.SCALED_SIZE;
+                if (odd_y != 0) {
+                    //Have 1 object ABOVE but don't have any object UNDER this entity.
+                    if (GameMap.containsObjectAt(this.entity, this.x + Sprite.SCALED_SIZE, this.y)
+                            && !GameMap.containsObjectAt(this.entity, this.x + Sprite.SCALED_SIZE,
+                            this.y + Sprite.SCALED_SIZE - 1)
+                            && odd_y > Sprite.SCALED_SIZE / 2) {
+
+                        diagonalDirection = new Point(Movement.RIGHT, Movement.DOWN);
+                        return false;
+                    }
+
+                    //Have 1 object UNDER but don't have any object ABOVE this entity.
+                    if (GameMap.containsObjectAt(this.entity, this.x + Sprite.SCALED_SIZE,
+                            this.y + Sprite.SCALED_SIZE - 1)
+                            && !GameMap.containsObjectAt(this.entity, this.x + Sprite.SCALED_SIZE, this.y)
+                            && odd_y < Sprite.SCALED_SIZE / 2) {
+
+                        diagonalDirection = new Point(Movement.RIGHT, Movement.UP);
+                        return false;
+                    }
+                }
+            }
+
+            case DOWN -> {
+                int odd_x = this.x % Sprite.SCALED_SIZE;
+                if (odd_x != 0) {
+                    //Have 1 object to the LEFT but don't have any object to the RIGHT of this entity.
+                    if (GameMap.containsObjectAt(this.entity, this.x, this.y + Sprite.SCALED_SIZE)
+                            && !GameMap.containsObjectAt(this.entity, this.x + Sprite.SCALED_SIZE - 1,
+                            this.y + Sprite.SCALED_SIZE)
+                            && odd_x > Sprite.SCALED_SIZE / 2) {
+
+                        diagonalDirection = new Point(Movement.RIGHT, Movement.DOWN);
+                        return false;
+                    }
+
+                    //Have 1 object to the RIGHT but don't have any object to the LEFT of this entity.
+                    if (GameMap.containsObjectAt(this.entity, this.x + Sprite.SCALED_SIZE - 1,
+                            this.y + Sprite.SCALED_SIZE)
+                            && !GameMap.containsObjectAt(this.entity, this.x, this.y + Sprite.SCALED_SIZE)
+                            && odd_x < Sprite.SCALED_SIZE / 2) {
+
+                        diagonalDirection = new Point(Movement.LEFT, Movement.DOWN);
+                        return false;
+                    }
+                }
+            }
+
+            case LEFT -> {
+                int odd_y = this.y % Sprite.SCALED_SIZE;
+                if (odd_y != 0) {
+                    //Have 1 object ABOVE but don't have any object UNDER this entity.
+                    if (GameMap.containsObjectAt(this.entity, this.x - 1, this.y)
+                            && !GameMap.containsObjectAt(this.entity, this.x - 1, this.y + Sprite.SCALED_SIZE - 1)
+                            && odd_y > Sprite.SCALED_SIZE / 2) {
+
+                        diagonalDirection = new Point(Movement.LEFT, Movement.DOWN);
+                        return false;
+                    }
+
+                    //Have 1 object UNDER but don't have any object ABOVE this entity.
+                    if (GameMap.containsObjectAt(this.entity, this.x - 1, this.y + Sprite.SCALED_SIZE - 1)
+                            && !GameMap.containsObjectAt(this.entity, this.x - 1, this.y)
+                            && odd_y < Sprite.SCALED_SIZE / 2) {
+
+                        diagonalDirection = new Point(Movement.LEFT, Movement.UP);
+                        return false;
+                    }
+                }
+            }
+
+            case UP -> {
+                int odd_x = this.x % Sprite.SCALED_SIZE;
+                if (odd_x != 0) {
+                    //Have 1 object to the LEFT but don't have any object to the RIGHT of this entity.
+                    if (GameMap.containsObjectAt(this.entity, this.x, this.y - 1)
+                            && !GameMap.containsObjectAt(this.entity, this.x + Sprite.SCALED_SIZE - 1,this.y - 1)
+                            && odd_x > Sprite.SCALED_SIZE / 2) {
+
+                        diagonalDirection = new Point(Movement.RIGHT, Movement.UP);
+                        return false;
+                    }
+
+                    //Have 1 object to the RIGHT but don't have any object to the LEFT of this entity.
+                    if (GameMap.containsObjectAt(this.entity, this.x + Sprite.SCALED_SIZE - 1, this.y - 1)
+                            && !GameMap.containsObjectAt(this.entity, this.x, this.y - 1)
+                            && odd_x < Sprite.SCALED_SIZE / 2) {
+
+                        diagonalDirection = new Point(Movement.LEFT, Movement.UP);
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
     //Based on direction.
     protected boolean isTouchingAnObjectAhead() {
         switch (this.direction) {

@@ -13,7 +13,7 @@ import java.util.Random;
 import java.util.TreeSet;
 
 public class EnhancedRandomMovement extends RandomMovement {
-    TreeSet<Integer> possibleDirection = new TreeSet<>();
+    TreeSet<Integer> possibleDirections = new TreeSet<>();
 
     public EnhancedRandomMovement(MovableEntity entity, int x, int y, int speed) {
         super(entity, x, y, speed);
@@ -25,14 +25,14 @@ public class EnhancedRandomMovement extends RandomMovement {
 
         ArrayList<Integer> canMove = new ArrayList<>();
 
-        if (possibleDirection.size() == 0) {
+        if (possibleDirections.size() == 0) {
             for (int direction_value = 0; direction_value < 4; direction_value++) {
                 if (direction_value != except_direction) {
                     canMove.add(direction_value);
                 }
             }
         } else {
-            while (!possibleDirection.isEmpty()) {
+            while (!possibleDirections.isEmpty()) {
                 int tmp_d = getPossibleDirection();
                 if (tmp_d != except_direction) {
                     canMove.add(tmp_d);
@@ -74,7 +74,7 @@ public class EnhancedRandomMovement extends RandomMovement {
         locateBombsAndDetermineDirection();
 
         //handle movement
-        if (this.possibleDirection.size() != 0 || this.remaining_steps == 0 || this.direction == Movement.FREEZE) {
+        if (this.possibleDirections.size() != 0 || this.remaining_steps == 0 || this.direction == Movement.FREEZE) {
             this.setDirection(this.direction);
         }
 
@@ -110,8 +110,8 @@ public class EnhancedRandomMovement extends RandomMovement {
     }
 
     private int getPossibleDirection() {
-        if (possibleDirection.size() != 0) {
-            return possibleDirection.pollFirst();
+        if (!possibleDirections.isEmpty()) {
+            return possibleDirections.pollFirst();
         }
         return Movement.FREEZE;
     }
@@ -131,23 +131,26 @@ public class EnhancedRandomMovement extends RandomMovement {
 
     private void locateLeft() {
         int tmp_x = this.x;
-        int tmp_y = this.y;
         Entity obj;
 
-        for (int i = 1; GameMap.getStillObjectAt(tmp_x, tmp_y) == null; i++) {
+        for (int i = 1; GameMap.getStillObjectAt(tmp_x, this.y + Sprite.SCALED_SIZE / 2) == null; i++) {
+
             tmp_x = x - i * Sprite.SCALED_SIZE;
-            obj = GameMap.getObjectAt(this.entity, tmp_x, tmp_y);
+            obj = GameMap.getObjectAt(this.entity, tmp_x, this.y + Sprite.SCALED_SIZE / 2);
 
             if (obj instanceof Bomb) {
                 double distance = this.x - (obj.getX() + Sprite.SCALED_SIZE);
                 if (distance < ((Bomb) obj).getRange()) {
 
-                    if (((Bomb) obj).getRange() - 1.6 * Sprite.SCALED_SIZE <= distance) {
-                        possibleDirection.add(Movement.RIGHT);
+                    checkAndAddDirection(Movement.UP);
+                    checkAndAddDirection(Movement.DOWN);
+
+                    if ( ((Bomb) obj).getRange() -  1.6 * Sprite.SCALED_SIZE <= distance
+                            || (isBlockedCompletely(Movement.UP) && isBlockedCompletely(Movement.DOWN)) ) {
+                        checkAndAddDirection(Movement.RIGHT);
                     }
 
-                    possibleDirection.add(Movement.UP);
-                    possibleDirection.add(Movement.DOWN);
+                    if (possibleDirections.isEmpty()) checkAndAddDirection(Movement.LEFT);
                 }
                 break;
             }
@@ -157,23 +160,25 @@ public class EnhancedRandomMovement extends RandomMovement {
 
     private void locateRight() {
         int tmp_x = this.x;
-        int tmp_y = this.y;
         Entity obj;
 
-        for (int i = 1; GameMap.getStillObjectAt(tmp_x, tmp_y) == null; i++) {
+        for (int i = 1; GameMap.getStillObjectAt(tmp_x, this.y + Sprite.SCALED_SIZE / 2) == null; i++) {
             tmp_x = x + i * Sprite.SCALED_SIZE;
-            obj = GameMap.getObjectAt(this.entity, tmp_x, tmp_y);
+            obj = GameMap.getObjectAt(this.entity, tmp_x, this.y + Sprite.SCALED_SIZE / 2);
 
             if (obj instanceof Bomb) {
                 double distance = obj.getX() - (this.x + Sprite.SCALED_SIZE);
                 if (distance < ((Bomb) obj).getRange()) {
 
-                    if (((Bomb) obj).getRange() - 1.6 * Sprite.SCALED_SIZE <= distance) {
-                        possibleDirection.add(Movement.LEFT);
+                    checkAndAddDirection(Movement.UP);
+                    checkAndAddDirection(Movement.DOWN);
+
+                    if ( ((Bomb) obj).getRange() -  1.6 * Sprite.SCALED_SIZE <= distance
+                            || (isBlockedCompletely(Movement.UP) && isBlockedCompletely(Movement.DOWN)) ) {
+                        checkAndAddDirection(Movement.LEFT);
                     }
 
-                    possibleDirection.add(Movement.UP);
-                    possibleDirection.add(Movement.DOWN);
+                    if (possibleDirections.isEmpty()) checkAndAddDirection(Movement.RIGHT);
                 }
                 break;
             }
@@ -181,24 +186,26 @@ public class EnhancedRandomMovement extends RandomMovement {
     }
 
     private void locateBottom() {
-        int tmp_x = this.x;
         int tmp_y = this.y;
         Entity obj;
 
-        for (int i = 1; GameMap.getStillObjectAt(tmp_x, tmp_y) == null; i++) {
+        for (int i = 1; GameMap.getStillObjectAt(this.x + Sprite.SCALED_SIZE / 2, tmp_y) == null; i++) {
             tmp_y = y + i * Sprite.SCALED_SIZE;
-            obj = GameMap.getObjectAt(this.entity, tmp_x, tmp_y);
+            obj = GameMap.getObjectAt(this.entity, this.x + Sprite.SCALED_SIZE / 2, tmp_y);
 
             if (obj instanceof Bomb) {
                 double distance = obj.getY() - (this.y + Sprite.SCALED_SIZE);
                 if (distance < ((Bomb) obj).getRange()) {
 
-                    if (((Bomb) obj).getRange() -  1.6 * Sprite.SCALED_SIZE <= distance) {
-                        possibleDirection.add(Movement.UP);
+                    checkAndAddDirection(Movement.LEFT);
+                    checkAndAddDirection(Movement.RIGHT);
+
+                    if ( ((Bomb) obj).getRange() -  1.6 * Sprite.SCALED_SIZE <= distance
+                            || (isBlockedCompletely(Movement.LEFT) && isBlockedCompletely(Movement.RIGHT)) ) {
+                        checkAndAddDirection(Movement.UP);
                     }
 
-                    possibleDirection.add(Movement.LEFT);
-                    possibleDirection.add(Movement.RIGHT);
+                    if (possibleDirections.isEmpty()) checkAndAddDirection(Movement.DOWN);
                 }
                 break;
             }
@@ -206,27 +213,33 @@ public class EnhancedRandomMovement extends RandomMovement {
     }
 
     private void locateTop() {
-        int tmp_x = this.x;
         int tmp_y = this.y;
         Entity obj;
 
-        for (int i = 1; GameMap.getStillObjectAt(tmp_x, tmp_y) == null; i++) {
+        for (int i = 1; GameMap.getStillObjectAt(this.x + Sprite.SCALED_SIZE / 2, tmp_y) == null; i++) {
             tmp_y = y - i * Sprite.SCALED_SIZE;
-            obj = GameMap.getObjectAt(this.entity, tmp_x, tmp_y);
+            obj = GameMap.getObjectAt(this.entity, this.x + Sprite.SCALED_SIZE / 2, tmp_y);
 
             if (obj instanceof Bomb) {
                 double distance = this.y - (obj.getY() + Sprite.SCALED_SIZE);
                 if (distance < ((Bomb) obj).getRange()) {
 
-                    if (((Bomb) obj).getRange() - 1.6 * Sprite.SCALED_SIZE <= distance) {
-                        possibleDirection.add(Movement.DOWN);
+                    checkAndAddDirection(Movement.LEFT);
+                    checkAndAddDirection(Movement.RIGHT);
+
+                    if ( ((Bomb) obj).getRange() -  1.6 * Sprite.SCALED_SIZE <= distance
+                            || (isBlockedCompletely(Movement.LEFT) && isBlockedCompletely(Movement.RIGHT)) ) {
+                        checkAndAddDirection(Movement.DOWN);
                     }
 
-                    possibleDirection.add(Movement.LEFT);
-                    possibleDirection.add(Movement.RIGHT);
+                    if (possibleDirections.isEmpty()) checkAndAddDirection(Movement.UP);
                 }
                 break;
             }
         }
+    }
+    
+    private void checkAndAddDirection(int direction) {
+        if (!isBlockedCompletely(direction)) possibleDirections.add(direction);
     }
 }

@@ -73,10 +73,10 @@ public class RandomMovement extends Movement {
                 this.setDirection(this.direction);
 
                 switch (direction) {
-                    case RIGHT -> x += 1;
-                    case LEFT -> x -= 1;
-                    case UP -> y -= 1;
-                    case DOWN -> y += 1;
+                    case RIGHT -> x += pixels_per_1_step;
+                    case LEFT -> x -= pixels_per_1_step;
+                    case UP -> y -= pixels_per_1_step;
+                    case DOWN -> y += pixels_per_1_step;
                 }
                 remaining_steps -= 1;
             }
@@ -85,10 +85,10 @@ public class RandomMovement extends Movement {
         }
 
         switch (direction) {
-            case RIGHT -> x += 1;
-            case LEFT -> x -= 1;
-            case UP -> y -= 1;
-            case DOWN -> y += 1;
+            case RIGHT -> x += pixels_per_1_step;
+            case LEFT -> x -= pixels_per_1_step;
+            case UP -> y -= pixels_per_1_step;
+            case DOWN -> y += pixels_per_1_step;
         }
         remaining_steps -= 1;
 

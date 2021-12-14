@@ -6,7 +6,6 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import uet.oop.bomberman.BombermanGame;
-import uet.oop.bomberman.Menu;
 import uet.oop.bomberman.entities.Bomb.Bomb;
 import uet.oop.bomberman.entities.MovableEntities.Bomber;
 import uet.oop.bomberman.graphics.Sprite;
@@ -17,13 +16,15 @@ public class GameWindow {
     public static final int INFORMATION_AREA_HEIGHT = 120;
     private final int MAX_LEVEL = 3;
     private final double DISPLAY_NOTIFICATION_TIME = 2;
-    private final double TIME_FOREACH_LEVEL = 20;
+    private final double TIME_FOREACH_LEVEL = 40;
 
     private int level = 1;
     private double notif_start_time = 0;
     private double start_game_time;
     private double remaining_time;
+    private double counted_time;
 
+    private boolean isPausing = false;
     private boolean isWaiting = true;
     private boolean isPlayingSound = false;
 
@@ -117,7 +118,13 @@ public class GameWindow {
     }
 
     private void displayTimer(GraphicsContext graphicsContext) {
-        this.remaining_time = TIME_FOREACH_LEVEL - (BombermanGame.getTime() - start_game_time);
+        if (isPausing) {
+            this.start_game_time = BombermanGame.getTime() - this.counted_time;
+            isPausing = false;
+        }
+
+        this.counted_time = BombermanGame.getTime() - this.start_game_time;
+        this.remaining_time = TIME_FOREACH_LEVEL - this.counted_time;
         if (this.remaining_time <= 0) return;
 
         graphicsContext.setFill(Color.BEIGE);
@@ -140,6 +147,11 @@ public class GameWindow {
 
     public void handleGamePaused() {
         GameMap.getBombs().forEach(Bomb::stopCountdown);
+        this.isPausing = true;
+
+        for (Bomber player : GameMap.getPlayers()) {
+            if (player != null && player.getFootstepsSound() != null) player.getFootstepsSound().stop();
+        }
     }
 
     public boolean playersLose() {

@@ -8,7 +8,7 @@ import uet.oop.bomberman.graphics.Sprite;
 
 /**
  * Bot is an entity that do not have ability to place bomb.
- * Bot includes Balloon, Doll, OneAl.
+ * Bots include Balloon, Doll, OneAl.
  */
 public abstract class Bot extends MovableEntity {
     public Bot(int xUnit, int yUnit, Image img) {
