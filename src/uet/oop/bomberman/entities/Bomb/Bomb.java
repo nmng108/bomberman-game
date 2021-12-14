@@ -60,6 +60,10 @@ public class Bomb extends Entity {
         return this.exploded;
     }
 
+    public int getRange() {
+        return range_unit * Sprite.SCALED_SIZE;
+    }
+
     public void setTimeOver(boolean timeOver) {
         this.timeOver = timeOver;
     }

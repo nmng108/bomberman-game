@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class RandomMovement extends Movement {
-    private double remaining_steps = 0;
+    protected double remaining_steps = 0;
 
     public RandomMovement(MovableEntity entity, int x, int y, int speed) {
         super(entity, x, y, speed);
@@ -41,12 +41,7 @@ public class RandomMovement extends Movement {
         while (isBlockedCompletely());
 
 
-        double remaining_cells = 1; //corresponding to (1 * DISPLAY_CELL's SIZE)
-
-        do {
-            remaining_cells = rand.nextDouble(6);
-        } while (remaining_cells == 0);
-
+        double remaining_cells = rand.nextDouble(1, 5);
         this.remaining_steps = remaining_cells * Sprite.SCALED_SIZE;
     }
 

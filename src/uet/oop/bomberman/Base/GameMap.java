@@ -14,10 +14,7 @@ import uet.oop.bomberman.Motion.Movement;
 import uet.oop.bomberman.entities.*;
 import uet.oop.bomberman.entities.Bomb.Bomb;
 import uet.oop.bomberman.entities.Item.*;
-import uet.oop.bomberman.entities.MovableEntities.Balloon;
-import uet.oop.bomberman.entities.MovableEntities.Bomber;
-import uet.oop.bomberman.entities.MovableEntities.MovableEntity;
-import uet.oop.bomberman.entities.MovableEntities.OneAl;
+import uet.oop.bomberman.entities.MovableEntities.*;
 import uet.oop.bomberman.entities.StillEntities.*;
 import uet.oop.bomberman.entities.StillEntities.StableStillObject.Grass;
 import uet.oop.bomberman.entities.StillEntities.StableStillObject.Wall;
@@ -309,6 +306,7 @@ public class GameMap {
                         case 'q' -> players.add(new Bomber(2, i, j, PLAYER_SPEED));
                         case '1' -> bots.add(new Balloon(i, j, ENEMY_SPEED));
                         case '2' -> bots.add(new OneAl(i, j, ENEMY_SPEED, ONEAL_PURSUIT_RANGE));
+                        case '3' -> bots.add(new Doll(i, j, ENEMY_SPEED));
                     }
 
                     // remove all characters except walls, bricks and openPortals.

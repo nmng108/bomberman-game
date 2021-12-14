@@ -18,13 +18,9 @@ public abstract class Movement {
     public static final int FREEZE = 4;
 
     protected double pixels_per_1_step = 1;
-    /**
-     * Speed is the number of units of move length a character can move continuously
-     * per 1 second. ('unit of move length' can be 1, 2 pixels,...)
-     * Maximum value is about 70.
-     */
+
     protected int speed;
-    /** period = 1 / speed, is the number of seconds needed to move 1 unit. */
+    /** period = 1 / speed, is the number of seconds needed for 1 step. */
     protected double period;
     /** calc_period is a supporting variable, used to make new time mark right at the time a new move is done. */
     protected double calc_period;

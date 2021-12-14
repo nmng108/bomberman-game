@@ -139,4 +139,22 @@ public class ImageLists {
         add(Sprite.oneal_right2.getFxImage());
         add(Sprite.oneal_right3.getFxImage());
     }};
+
+    public static List<Image> dollLeftImages = new ArrayList<>() {{
+        add(Sprite.doll_left1.getFxImage());
+        add(Sprite.doll_left2.getFxImage());
+        add(Sprite.doll_left3.getFxImage());
+    }};
+
+    public static List<Image> dollRightImages = new ArrayList<>() {{
+        add(Sprite.doll_right1.getFxImage());
+        add(Sprite.doll_right2.getFxImage());
+        add(Sprite.doll_right3.getFxImage());
+    }};
+
+    public static List<Image> mobDeadImages = new ArrayList<>() {{
+        add(Sprite.mob_dead1.getFxImage());
+        add(Sprite.mob_dead2.getFxImage());
+        add(Sprite.mob_dead3.getFxImage());
+    }};
 }
